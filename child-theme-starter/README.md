@@ -34,7 +34,7 @@ cp -r mbn-theme/child-theme-starter ../client-project-theme
 Or manually:
 1. Copy the `child-theme-starter` folder
 2. Paste it to `wp-content/themes/`
-3. Rename to your project name (e.g., `acme-company-theme`)
+3. Rename to your project name (e.g., `mbn-child-theme-theme`)
 
 ### 2. Customize Theme Information
 
@@ -43,7 +43,7 @@ Edit `style.css` and update:
 - **Theme URI**: Your project URL
 - **Author**: Your name or company
 - **Description**: Describe your project
-- **Text Domain**: Change to match your theme slug (e.g., `acme-company-theme`)
+- **Text Domain**: Change to match your theme slug (e.g., `mbn-child-theme-theme`)
 
 ```css
 /*
@@ -54,7 +54,7 @@ Author: Your Name
 Author URI: https://yoursite.com/
 Template: mbn-theme
 Version: 1.0.0
-Text Domain: acme-company-theme
+Text Domain: mbn-child-theme-theme
 */
 ```
 

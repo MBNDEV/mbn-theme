@@ -167,10 +167,10 @@ npm install
 npm run build
 
 # Step 2: Create child theme for client
-php scripts/create-child-theme.php acme-company-theme "Acme Company Theme"
+php scripts/create-child-theme.php mbn-child-theme-theme "Acme Company Theme"
 
 # Step 3: Set up child theme
-cd ../acme-company-theme
+cd ../mbn-child-theme-theme
 npm install
 npm run start
 

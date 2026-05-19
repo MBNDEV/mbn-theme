@@ -13,15 +13,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Auto-discover and register all native Gutenberg blocks.
+ * Auto-discover and register all native Gutenberg blocks from PARENT theme only.
  *
- * Scans the build/blocks/ directory for subdirectories containing block.json files
+ * Scans the parent theme's build/blocks/ directory for subdirectories containing block.json files
  * and registers them with WordPress.
  *
  * @return void
  */
 function mbn_theme_register_blocks() {
-	$blocks_dir = get_theme_file_path( 'build/blocks' );
+	// Use get_template_directory() to always get PARENT theme path, even when child theme is active.
+	$blocks_dir = get_template_directory() . '/build/blocks';
 
 	// Check if blocks directory exists.
   if ( ! is_dir( $blocks_dir ) ) {

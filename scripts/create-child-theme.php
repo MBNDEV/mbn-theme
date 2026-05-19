@@ -9,7 +9,7 @@
  *   php scripts/create-child-theme.php <theme-name>
  * 
  * Example:
- *   php scripts/create-child-theme.php acme-company-theme
+ *   php scripts/create-child-theme.php mbn-child-theme-theme
  */
 
 if (php_sapi_name() !== 'cli') {
@@ -45,7 +45,7 @@ if (!isset($argv[1]) || empty($argv[1])) {
     error("Usage: php scripts/create-child-theme.php <theme-name>");
     echo "\n";
     echo "Example:\n";
-    echo "  php scripts/create-child-theme.php acme-company-theme\n";
+    echo "  php scripts/create-child-theme.php mbn-child-theme-theme\n";
     echo "  php scripts/create-child-theme.php \"Client Project Theme\"\n";
     echo "\n";
     exit(1);

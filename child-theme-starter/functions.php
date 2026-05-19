@@ -88,40 +88,8 @@ function mbn_child_setup() {
 }
 add_action( 'after_setup_theme', 'mbn_child_setup', 11 );
 
-/**
- * Register custom Gutenberg blocks for child theme
- *
- * Auto-registers blocks from the build/blocks/ directory.
- * Create your custom blocks in: /blocks/your-block-name/
- * Each block should have: block.json, index.js, edit.js, save.js
- * Build with: npm run build
- */
-function mbn_child_register_blocks() {
-	// Auto-register blocks from build directory.
-	$build_dir = get_stylesheet_directory() . '/build/blocks';
-
-  if ( is_dir( $build_dir ) ) {
-      $blocks = glob( $build_dir . '/*', GLOB_ONLYDIR );
-
-    foreach ( $blocks as $block_path ) {
-        $block_json = $block_path . '/block.json';
-      if ( file_exists( $block_json ) ) {
-        register_block_type( $block_path );
-      }
-    }
-  }
-
-	/**
-	 * Manual block registration (if needed).
-	 *
-	 * Uncomment and customize for specific blocks.
-	 *
-	 * if ( file_exists( get_stylesheet_directory() . '/blocks/custom-cta-block' ) ) {
-	 *     register_block_type( get_stylesheet_directory() . '/blocks/custom-cta-block' );
-	 * }
-	 */
-}
-add_action( 'init', 'mbn_child_register_blocks' );
+// Load child theme block registration.
+require_once get_stylesheet_directory() . '/block-registry.php';
 
 /**
  * Register custom post types for child theme

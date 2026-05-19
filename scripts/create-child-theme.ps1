@@ -1,6 +1,6 @@
 # MBN Child Theme Creator - PowerShell Version
 # Usage: .\scripts\create-child-theme.ps1 <theme-name> [theme-display-name]
-# Example: .\scripts\create-child-theme.ps1 acme-company-theme "Acme Company Theme"
+# Example: .\scripts\create-child-theme.ps1 mbn-child-theme-theme "Acme Company Theme"
 
 param(
     [Parameter(Mandatory=$true)]

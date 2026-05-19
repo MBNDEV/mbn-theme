@@ -92,10 +92,10 @@ This is the **parent theme** that provides shared infrastructure, reusable block
 ```bash
 # Create a new child theme for your client
 cd wp-content/themes/
-php mbn-theme/scripts/create-child-theme.php acme-company-theme "Acme Company Theme"
+php mbn-theme/scripts/create-child-theme.php mbn-child-theme-theme "Acme Company Theme"
 
 # Install dependencies
-cd acme-company-theme
+cd mbn-child-theme-theme
 npm install
 
 # Start development
