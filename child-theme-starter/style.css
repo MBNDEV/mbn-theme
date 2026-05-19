@@ -1,0 +1,34 @@
+/*
+Theme Name: MBN Child Theme
+Theme URI: https://www.mybizniche.com/
+Description: Child theme for MBN Theme - Customize this for your project
+Author: My Biz Niche
+Author URI: https://www.mybizniche.com/
+Template: mbn-theme
+Version: 1.0.0
+License: GPL2
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: mbn-child-theme
+*/
+
+/**
+ * Add your custom styles below
+ * These will override parent theme styles
+ */
+
+/* Example: Custom colors */
+/*
+:root {
+    --primary-color: #your-color;
+    --secondary-color: #your-color;
+}
+*/
+
+/* Example: Custom header styles */
+/*
+.site-header {
+    background-color: #custom-color;
+}
+*/
+
+/* Add your custom CSS here */

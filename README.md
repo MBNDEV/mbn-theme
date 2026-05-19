@@ -37,6 +37,34 @@ Custom WordPress theme for My Biz Niche.
    ```
 5. In WordPress Admin, go to **Appearance > Themes** and activate **Black Line Guardian Fund Theme**.
 
+## Child Theme Support
+
+**Recommended for client projects:** Use child themes to customize MBN Theme for specific projects while keeping the parent theme intact.
+
+### Quick Start with Child Themes
+
+```bash
+# Copy the starter template
+cd wp-content/themes/
+cp -r mbn-theme/child-theme-starter client-project-theme
+
+# Customize style.css with your project details
+# Edit functions.php for custom functionality
+# Activate child theme in WordPress Admin
+```
+
+### Benefits of Child Themes
+
+- ✅ **Safe updates** - Get parent theme updates without losing customizations
+- ✅ **Project isolation** - Each project has its own customizations
+- ✅ **Version control** - Lock to specific parent theme versions
+- ✅ **Easy maintenance** - Multiple projects share one parent theme
+
+### Documentation
+
+- **[Child Theme Guide](docs/CHILD-THEME-GUIDE.md)** - Complete guide for child theme development
+- **[Child Theme Starter](child-theme-starter/)** - Ready-to-use starter template
+
 ## Development
 
 ### Block Development
