@@ -6,7 +6,7 @@ Custom WordPress theme for My Biz Niche.
 
 - Theme Name: `Black Line Security Ops`
 - Description: `Custom Theme for MBN`
-- Version: `1.0.2`
+- Version: `1.1.5`
 - Author: `My Biz Niche`
 - Theme URI: [https://github.com/MBNDEV/mbn-theme](https://github.com/MBNDEV/mbn-theme)
 - Author URI: [https://www.mybizniche.com/](https://www.mybizniche.com/)
@@ -87,6 +87,59 @@ The theme includes GitHub-based update checks through Plugin Update Checker.
   - [https://github.com/MBNDEV/mbn-theme](https://github.com/MBNDEV/mbn-theme)
 - Slug configured in code:
   - `mbn-theme`
+
+## Version Releasing
+
+MBN Theme uses **Semantic Versioning** and **GitHub Releases** to manage versions. This allows developers to use specific stable versions instead of always pulling from the master branch.
+
+### For Developers Using This Theme
+
+**Checkout a specific version:**
+```bash
+# List available versions
+git tag -l
+
+# Checkout a specific stable version
+git checkout v1.0.2
+
+# Or checkout the latest release
+git checkout $(git describe --tags --abbrev=0)
+```
+
+**Update to latest release:**
+```bash
+git fetch --all --tags
+git checkout $(git describe --tags --abbrev=0)
+composer install --no-dev
+npm install
+npm run build
+```
+
+### For WordPress Sites
+
+WordPress sites using this theme will automatically receive update notifications through Plugin Update Checker. Simply update from **WordPress Admin → Appearance → Themes**.
+
+### For Theme Maintainers
+
+**Create a new release:**
+```bash
+# Bump version and update files
+php scripts/bump-version.php 1.1.0
+
+# Commit and tag
+git add -A
+git commit -m "chore: bump version to 1.1.0"
+git tag -a v1.1.0 -m "Release v1.1.0"
+git push origin main --tags
+```
+
+The GitHub Actions workflow will automatically create a release with built assets.
+
+### Documentation
+
+- **[Versioning Guide](docs/VERSIONING.md)** - Complete guide for creating and using releases
+- **[Release Checklist](docs/RELEASE-CHECKLIST.md)** - Step-by-step release checklist
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and release notes
 
 ## Linting
 
