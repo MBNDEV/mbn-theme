@@ -25,6 +25,99 @@ function custom_theme_add_template_tools_page() {
 add_action( 'admin_menu', 'custom_theme_add_template_tools_page' );
 
 /**
+ * Get all templates that can be imported or exported, keyed by slug.
+ *
+ * Each entry contains: title, type (system|layout), source_dir, source_file, export_dir, export_file.
+ *
+ * @return array
+ */
+function custom_theme_get_all_syncable_templates() {
+	$header_slug = custom_theme_header_template_slug();
+	$footer_slug = custom_theme_footer_template_slug();
+
+	$templates = array(
+		$header_slug => array(
+			'title'       => 'Header Template',
+			'type'        => 'system',
+			'source_dir'  => 'template-parts',
+			'source_file' => 'header-template',
+			'export_dir'  => 'template-parts',
+			'export_file' => 'header-template',
+		),
+		$footer_slug => array(
+			'title'       => 'Footer Template',
+			'type'        => 'system',
+			'source_dir'  => 'template-parts',
+			'source_file' => 'footer-template',
+			'export_dir'  => 'template-parts',
+			'export_file' => 'footer-template',
+		),
+	);
+
+	foreach ( custom_theme_get_layout_template_file_slugs() as $slug ) {
+		$layout_name        = preg_replace( '/^template-/', '', $slug );
+		$templates[ $slug ] = array(
+			'title'       => custom_theme_layout_template_title_from_slug( $slug ),
+			'type'        => 'layout',
+			'source_dir'  => 'page-templates',
+			'source_file' => $slug,
+			'export_dir'  => 'template-parts/layouts',
+			'export_file' => $layout_name,
+		);
+	}
+
+	return $templates;
+}
+
+/**
+ * Import a single template by slug using its source file.
+ *
+ * @param string $slug Template slug.
+ * @param array  $info Template info from custom_theme_get_all_syncable_templates().
+ * @return bool True if imported, false if source file not found.
+ * @throws Exception If database operation fails.
+ */
+function custom_theme_import_template_for_slug( $slug, $info ) {
+	$file_path = get_theme_file_path( $info['source_dir'] . '/' . $info['source_file'] . '.php' );
+
+  if ( ! file_exists( $file_path ) ) {
+      return false;
+  }
+
+	ob_start();
+	include $file_path; // phpcs:ignore WordPressVIPMinimum.Files.IncludingFile.UsingVariable
+	$content = trim( ob_get_clean() );
+
+	$post_id = custom_theme_get_block_template_id_by_slug( $slug );
+
+  if ( 0 === $post_id ) {
+      $result = wp_insert_post(
+        array(
+			'post_type'    => 'mbn_block_template',
+			'post_title'   => $info['title'],
+			'post_name'    => $slug,
+			'post_status'  => 'publish',
+			'post_content' => $content,
+		),
+        true
+      );
+  } else {
+      $result = wp_update_post(
+        array(
+			'ID'           => $post_id,
+			'post_content' => $content,
+		)
+      );
+  }
+
+  if ( is_wp_error( $result ) ) {
+      throw new Exception( esc_html( $result->get_error_message() ) );
+  }
+
+	return true;
+}
+
+/**
  * Import a single template file.
  *
  * @param string $slug Template slug.
@@ -82,37 +175,30 @@ function custom_theme_import_single_template_file( $slug ) {
 }
 
 /**
- * Import all templates from files (header/footer from template-parts/, page templates from page-templates/).
+ * Import templates from files. Optionally limit to a set of slugs.
  *
- * @throws Exception If import fails.
+ * @param array $selected_slugs Slugs to import. Empty = import all.
+ * @throws Exception If no templates were imported and all failed.
  */
-function custom_theme_import_all_templates_from_files() {
-	$imported = 0;
-	$errors   = array();
+function custom_theme_import_all_templates_from_files( $selected_slugs = array() ) {
+	$imported  = 0;
+	$errors    = array();
+	$templates = custom_theme_get_all_syncable_templates();
 
-	// Import header/footer using existing function
-  try {
-      custom_theme_maybe_seed_default_block_templates( true );
-      $imported += 2; // Header + Footer
-  } catch ( Exception $e ) {
-      $errors[] = 'System templates: ' . $e->getMessage();
+  if ( ! empty( $selected_slugs ) ) {
+      $templates = array_intersect_key( $templates, array_flip( $selected_slugs ) );
   }
 
-	// Import page templates from page-templates/
-	$page_template_slugs = custom_theme_get_layout_template_file_slugs();
-
-  foreach ( $page_template_slugs as $slug ) {
+  foreach ( $templates as $slug => $info ) {
     try {
-        $imported_file = custom_theme_import_single_template_file( $slug );
-      if ( $imported_file ) {
+      if ( custom_theme_import_template_for_slug( $slug, $info ) ) {
         ++$imported;
       }
     } catch ( Exception $e ) {
-        $errors[] = sprintf( '%s: %s', $slug, $e->getMessage() );
+        $errors[] = sprintf( '%s: %s', esc_html( $info['title'] ), $e->getMessage() );
     }
   }
 
-	// Report results
   if ( ! empty( $errors ) && 0 === $imported ) {
       throw new Exception( implode( ' | ', array_map( 'esc_html', $errors ) ) );
   }
@@ -149,12 +235,24 @@ function custom_theme_handle_template_sync_actions() {
 
 	check_admin_referer( 'custom_theme_sync_templates', 'custom_theme_sync_nonce' );
 
-	$action = sanitize_text_field( $_POST['custom_theme_sync_action'] );
+	$action         = sanitize_text_field( $_POST['custom_theme_sync_action'] );
+	$selected_slugs = isset( $_POST['template_slugs'] )
+		? array_map( 'sanitize_text_field', (array) $_POST['template_slugs'] )
+		: array();
+
+  if ( empty( $selected_slugs ) ) {
+      add_settings_error(
+        'custom_theme_sync',
+        'no_selection',
+        esc_html__( 'Please select at least one template.', 'mbn-theme' ),
+        'error'
+      );
+      return;
+  }
 
   if ( 'import_from_files' === $action ) {
     try {
-        // Import all templates from files
-        custom_theme_import_all_templates_from_files();
+        custom_theme_import_all_templates_from_files( $selected_slugs );
     } catch ( Exception $e ) {
         add_settings_error(
           'custom_theme_sync',
@@ -169,8 +267,7 @@ function custom_theme_handle_template_sync_actions() {
     }
   } elseif ( 'export_to_files' === $action ) {
     try {
-        // Export Block Template posts to template-parts/*.php files
-        custom_theme_export_templates_to_files();
+        custom_theme_export_templates_to_files( $selected_slugs );
     } catch ( Exception $e ) {
         add_settings_error(
           'custom_theme_sync',
@@ -268,13 +365,19 @@ function custom_theme_export_single_template( $slug, $config, $wp_filesystem ) {
 }
 
 /**
- * Export Block Template posts to PHP files (header/footer to template-parts/, page template blocks to template-parts/layouts/).
+ * Export Block Template posts to PHP files. Optionally limit to a set of slugs.
  *
- * @throws Exception If export fails.
+ * @param array $selected_slugs Slugs to export. Empty = export all.
+ * @throws Exception If no templates were exported.
  */
-function custom_theme_export_templates_to_files() {
-	$exported = 0;
-	$errors   = array();
+function custom_theme_export_templates_to_files( $selected_slugs = array() ) {
+	$exported  = 0;
+	$errors    = array();
+	$templates = custom_theme_get_all_syncable_templates();
+
+  if ( ! empty( $selected_slugs ) ) {
+      $templates = array_intersect_key( $templates, array_flip( $selected_slugs ) );
+  }
 
 	// Initialize WP_Filesystem.
 	global $wp_filesystem;
@@ -283,78 +386,53 @@ function custom_theme_export_templates_to_files() {
       WP_Filesystem();
   }
 
-	// Export header/footer to template-parts/
-	$system_templates = array(
-		custom_theme_header_template_slug() => array(
-			'filename' => 'header-template',
-			'dir'      => 'template-parts',
-		),
-		custom_theme_footer_template_slug() => array(
-			'filename' => 'footer-template',
-			'dir'      => 'template-parts',
-		),
-	);
-
-	// Export page template BLOCK CONTENT to template-parts/layouts/
-	// Note: page-templates/*.php stay as traditional WordPress templates
-	$page_template_slugs = custom_theme_get_layout_template_file_slugs();
-	$page_templates      = array();
-	foreach ( $page_template_slugs as $slug ) {
-		// Extract basename from template-* slug (e.g., template-blank → blank)
-		$layout_name             = preg_replace( '/^template-/', '', $slug );
-		$page_templates[ $slug ] = array(
-			'filename' => $layout_name,
-			'dir'      => 'template-parts/layouts',
-		);
-	}
-
-	$all_templates = array_merge( $system_templates, $page_templates );
-
-	// Check directories
-	$dirs = array( 'template-parts', 'template-parts/layouts' );
+	// Validate all unique export directories up front.
+	$dirs = array_unique( array_column( $templates, 'export_dir' ) );
 	custom_theme_validate_export_directories( $dirs );
 
-	// Export all templates
-	foreach ( $all_templates as $slug => $config ) {
-      try {
-          $exported_template = custom_theme_export_single_template( $slug, $config, $wp_filesystem );
-        if ( $exported_template ) {
+  foreach ( $templates as $slug => $info ) {
+    try {
+        $config = array(
+            'filename' => $info['export_file'],
+            'dir'      => $info['export_dir'],
+        );
+        if ( custom_theme_export_single_template( $slug, $config, $wp_filesystem ) ) {
             ++$exported;
         }
-      } catch ( Exception $e ) {
-          $errors[] = sprintf( '%s: %s', $config['filename'], $e->getMessage() );
-      }
-	}
+    } catch ( Exception $e ) {
+        $errors[] = sprintf( '%s: %s', esc_html( $info['title'] ), $e->getMessage() );
+    }
+  }
 
-	// Report results
-	if ( $exported > 0 ) {
-		$message = sprintf(
-			// translators: %d is the number of templates exported.
-          __( '%d template(s) exported successfully!', 'mbn-theme' ),
-          $exported
-		);
+  if ( $exported > 0 ) {
+      $message = sprintf(
+          // translators: %d is the number of templates exported.
+        __( '%d template(s) exported successfully!', 'mbn-theme' ),
+        $exported
+      );
 
-      if ( ! empty( $errors ) ) {
-          $message .= ' ' . __( 'Errors:', 'mbn-theme' ) . ' ' . implode( '; ', $errors );
-      }
+    if ( ! empty( $errors ) ) {
+      $message .= ' ' . __( 'Errors:', 'mbn-theme' ) . ' ' . implode( '; ', $errors );
+    }
 
-		add_settings_error(
-          'custom_theme_sync',
-          'export_success',
-          $message,
-          empty( $errors ) ? 'success' : 'warning'
-		);
-	} else {
-		$error_message = __( 'No templates were exported.', 'mbn-theme' );
+      add_settings_error(
+        'custom_theme_sync',
+        'export_success',
+        $message,
+        empty( $errors ) ? 'success' : 'warning'
+      );
+      return;
+  }
 
-      if ( ! empty( $errors ) ) {
-          $error_message .= ' ' . __( 'Errors:', 'mbn-theme' ) . ' ' . implode( '; ', array_map( 'esc_html', $errors ) );
-      } else {
-          $error_message .= ' ' . __( 'Make sure Block Template posts exist.', 'mbn-theme' );
-      }
+	$error_message = __( 'No templates were exported.', 'mbn-theme' );
 
-		throw new Exception( esc_html( $error_message ) );
-	}
+  if ( ! empty( $errors ) ) {
+      $error_message .= ' ' . __( 'Errors:', 'mbn-theme' ) . ' ' . implode( '; ', array_map( 'esc_html', $errors ) );
+  } else {
+      $error_message .= ' ' . __( 'Make sure Block Template posts exist.', 'mbn-theme' );
+  }
+
+	throw new Exception( esc_html( $error_message ) );
 }
 
 /**
@@ -406,29 +484,71 @@ function custom_theme_render_export_destinations_table() {
  * Render import card section.
  */
 function custom_theme_render_import_card() {
+	$templates = custom_theme_get_all_syncable_templates();
   ?>
 	<div class="card" style="max-width: 800px;">
 		<h2>📥 Import Templates from Files</h2>
-		<p>
-			<strong>Use this to deploy to staging/production:</strong><br>
-			Imports all Block Templates from PHP files:
-		</p>
-		<ul>
-			<li>Header/Footer from <code>template-parts/</code></li>
-			<li>Page Template Blocks from <code>template-parts/layouts/</code></li>
-		</ul>
-		<p>
-			<strong>Note:</strong> Traditional WordPress template files in <code>page-templates/</code> 
-			are Git-tracked separately and don't need syncing.
-		</p>
-		<p>
-			This will <strong>overwrite</strong> existing Block Template posts with content from PHP files.
-		</p>
+		<p>Select templates to import from PHP files into the database. This will <strong>overwrite</strong> existing Block Template posts.</p>
+
 		<form method="post" style="margin-top: 20px;">
 			<?php wp_nonce_field( 'custom_theme_sync_templates', 'custom_theme_sync_nonce' ); ?>
 			<input type="hidden" name="custom_theme_sync_action" value="import_from_files">
+
+			<table class="widefat" style="margin-bottom: 15px;">
+				<thead>
+					<tr>
+						<th style="width: 40px;">
+							<input type="checkbox" id="select-all-import-templates" title="Select all">
+						</th>
+						<th>Template</th>
+						<th>Source File</th>
+						<th>Type</th>
+						<th>Action</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $templates as $slug => $info ) : ?>
+						<?php
+						$file_path   = get_theme_file_path( $info['source_dir'] . '/' . $info['source_file'] . '.php' );
+						$file_exists = file_exists( $file_path );
+						$post_id     = custom_theme_get_block_template_id_by_slug( $slug );
+						$row_style   = ! $file_exists ? ' style="opacity:0.5;"' : '';
+						?>
+						<tr<?php echo $row_style; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+							<td>
+								<input type="checkbox" name="template_slugs[]" value="<?php echo esc_attr( $slug ); ?>"
+									<?php checked( $file_exists ); ?> <?php disabled( ! $file_exists ); ?>>
+							</td>
+							<td><strong><?php echo esc_html( $info['title'] ); ?></strong></td>
+							<td>
+								<code><?php echo esc_html( $info['source_dir'] . '/' . $info['source_file'] . '.php' ); ?></code>
+								<?php if ( ! $file_exists ) : ?>
+									<span style="color:#d63638;"> (not found)</span>
+								<?php endif; ?>
+							</td>
+							<td><?php echo esc_html( ucfirst( $info['type'] ) ); ?></td>
+							<td>
+								<?php if ( $post_id > 0 ) : ?>
+									<span style="color:#f0b849;">&#8635; Will Update</span>
+								<?php else : ?>
+									<span style="color:#46b450;">+ Will Create</span>
+								<?php endif; ?>
+							</td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+
+			<script>
+			document.getElementById( 'select-all-import-templates' ).addEventListener( 'change', function () {
+				document.querySelectorAll( 'input[name="template_slugs[]"]:not(:disabled)' ).forEach( function ( cb ) {
+					cb.checked = this.checked;
+				}, this );
+			} );
+			</script>
+
 			<button type="submit" class="button button-primary">
-				📥 Import from Files (Overwrite Database)
+				📥 Import Selected from Files
 			</button>
 		</form>
 	</div>
@@ -439,29 +559,65 @@ function custom_theme_render_import_card() {
  * Render export card section.
  */
 function custom_theme_render_export_card() {
+	$templates = custom_theme_get_all_syncable_templates();
   ?>
 	<div class="card" style="max-width: 800px; margin-top: 20px;">
 		<h2>📤 Export Templates to Files</h2>
-		<p>
-			<strong>Use this after editing in WordPress admin:</strong><br>
-			Exports all Block Template posts to PHP files:
-		</p>
-		<ul>
-			<li>Header/Footer → <code>template-parts/</code></li>
-			<li>Page Template Blocks → <code>template-parts/layouts/</code></li>
-		</ul>
-		<p>
-			<strong>Note:</strong> This exports <em>block content</em> only. Traditional WordPress 
-			templates in <code>page-templates/</code> are edited directly in PHP.
-		</p>
-		<p>
-			Allows you to version control templates and deploy via Git.
-		</p>
+		<p>Select templates to export from the database to PHP files for version control.</p>
+
 		<form method="post" style="margin-top: 20px;">
 			<?php wp_nonce_field( 'custom_theme_sync_templates', 'custom_theme_sync_nonce' ); ?>
 			<input type="hidden" name="custom_theme_sync_action" value="export_to_files">
+
+			<table class="widefat" style="margin-bottom: 15px;">
+				<thead>
+					<tr>
+						<th style="width: 40px;">
+							<input type="checkbox" id="select-all-export-templates" title="Select all">
+						</th>
+						<th>Template</th>
+						<th>Export Destination</th>
+						<th>Type</th>
+						<th>DB Status</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $templates as $slug => $info ) : ?>
+						<?php
+						$post_id   = custom_theme_get_block_template_id_by_slug( $slug );
+						$has_post  = $post_id > 0;
+						$row_style = ! $has_post ? ' style="opacity:0.5;"' : '';
+						?>
+						<tr<?php echo $row_style; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+							<td>
+								<input type="checkbox" name="template_slugs[]" value="<?php echo esc_attr( $slug ); ?>"
+									<?php checked( $has_post ); ?> <?php disabled( ! $has_post ); ?>>
+							</td>
+							<td><strong><?php echo esc_html( $info['title'] ); ?></strong></td>
+							<td><code><?php echo esc_html( $info['export_dir'] . '/' . $info['export_file'] . '.php' ); ?></code></td>
+							<td><?php echo esc_html( ucfirst( $info['type'] ) ); ?></td>
+							<td>
+								<?php if ( $has_post ) : ?>
+									<span style="color:#46b450;">&#10003; Exists</span>
+								<?php else : ?>
+									<span style="color:#d63638;">&#10005; Not found</span>
+								<?php endif; ?>
+							</td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+
+			<script>
+			document.getElementById( 'select-all-export-templates' ).addEventListener( 'change', function () {
+				document.querySelectorAll( 'input[name="template_slugs[]"]:not(:disabled)' ).forEach( function ( cb ) {
+					cb.checked = this.checked;
+				}, this );
+			} );
+			</script>
+
 			<button type="submit" class="button button-secondary">
-				📤 Export to Files (Update Git Files)
+				📤 Export Selected to Files
 			</button>
 		</form>
 	</div>
@@ -508,7 +664,7 @@ function custom_theme_render_workflow_card() {
 			<li>Edit a page in WordPress</li>
 			<li>Click the <strong>"+"</strong> button to add a block</li>
 			<li>Go to the <strong>"Patterns"</strong> tab</li>
-			<li>Select <strong>"Black Line Security Ops"</strong> category</li>
+			<li>Select <strong>"Blackline Guardian Fund"</strong> category</li>
 			<li>Insert your pattern (e.g., "Complete Home Page")</li>
 		</ol>
 	</div>

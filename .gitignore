@@ -1,10 +1,9 @@
 node_modules/
-
+.husky/
 .cursor/
 .vscode/
 build/
 *.hot-update.js
 *.hot-update.json
 .DS_Store
-
-/docs
+html_tailwind/*

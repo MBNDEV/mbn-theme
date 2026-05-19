@@ -33,6 +33,10 @@ blockDirs.forEach( ( dir ) => {
   if ( ! blockName ) {
     return;
   }
+  // Skip shared components directory
+  if ( blockName === 'shared' ) {
+    return;
+  }
   if ( blockFilter && ! blockName.includes( blockFilter ) ) {
     return;
   }
@@ -50,6 +54,11 @@ blockDirs.forEach( ( dir ) => {
     {
       from: path.resolve( dir, 'render.php' ),
       to: path.resolve( __dirname, `build/blocks/${ blockName }/render.php` ),
+      noErrorOnMissing: true,
+    },
+    {
+      from: path.resolve( dir, 'script.js' ),
+      to: path.resolve( __dirname, `build/blocks/${ blockName }/script.js` ),
       noErrorOnMissing: true,
     }
   );

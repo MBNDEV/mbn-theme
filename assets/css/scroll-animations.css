@@ -1,0 +1,312 @@
+/**
+ * Scroll-reveal animations — Elementor-style entrance set.
+ *
+ * Mirrors the entrance-animation list Elementor exposes in the
+ * Advanced → Motion Effects panel. Keyframes are derived from
+ * Animate.css (MIT, Daniel Eden) which is the same library Elementor
+ * builds on top of.
+ *
+ * Variants:
+ *   Fading      — fadeIn, fadeInDown, fadeInLeft, fadeInRight, fadeInUp
+ *   Zooming     — zoomIn, zoomInDown, zoomInLeft, zoomInRight, zoomInUp
+ *   Bouncing    — bounceIn, bounceInDown, bounceInLeft, bounceInRight, bounceInUp
+ *   Sliding     — slideInDown, slideInLeft, slideInRight, slideInUp
+ *   Rotating    — rotateIn, rotateInDownLeft, rotateInDownRight, rotateInUpLeft, rotateInUpRight
+ *   Light Speed — lightSpeedIn
+ *   Specials    — rollIn
+ *
+ * Duration:
+ *   data-animate-duration="slow" → 2s
+ *   data-animate-duration="fast" → 0.75s
+ *   default → 1.25s
+ *
+ * Delay:
+ *   data-animate-delay="<milliseconds>"  (read by the JS, applied as
+ *   --animation-delay CSS variable on the element)
+ *
+ * Backward compatibility:
+ *   Legacy values "fade-up", "fade-left", "fade-right", "fade-in"
+ *   continue to work — they map to fadeInUp / fadeInLeft / fadeInRight / fadeIn.
+ *
+ * @package CustomTheme
+ */
+
+/* ─── Initial hidden state ───────────────────────────────────────────── */
+
+[data-animate]:not(.is-visible):not(.no-anim) {
+	opacity: 0;
+}
+
+/* ─── Active state — run the animation ───────────────────────────────── */
+
+[data-animate].is-visible {
+	animation-duration: var( --animation-duration, 1.25s );
+	animation-delay: var( --animation-delay, 0s );
+	animation-fill-mode: both;
+	animation-timing-function: ease;
+}
+
+[data-animate][data-animate-duration="slow"].is-visible { --animation-duration: 2s; }
+[data-animate][data-animate-duration="fast"].is-visible { --animation-duration: 0.75s; }
+
+/* ─── Instant reveal (above-the-fold on first paint) ─────────────────── */
+
+[data-animate].no-anim {
+	opacity: 1 !important;
+	animation: none !important;
+}
+
+/* ─── Reduced motion — show everything immediately ───────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+	[data-animate] {
+		opacity: 1 !important;
+		animation: none !important;
+	}
+}
+
+/* ─── Variant → keyframe mapping ─────────────────────────────────────── */
+
+[data-animate="fadeIn"].is-visible           { animation-name: fadeIn; }
+[data-animate="fadeInDown"].is-visible       { animation-name: fadeInDown; }
+[data-animate="fadeInLeft"].is-visible       { animation-name: fadeInLeft; }
+[data-animate="fadeInRight"].is-visible      { animation-name: fadeInRight; }
+[data-animate="fadeInUp"].is-visible         { animation-name: fadeInUp; }
+
+[data-animate="zoomIn"].is-visible           { animation-name: zoomIn; }
+[data-animate="zoomInDown"].is-visible       { animation-name: zoomInDown; }
+[data-animate="zoomInLeft"].is-visible       { animation-name: zoomInLeft; }
+[data-animate="zoomInRight"].is-visible      { animation-name: zoomInRight; }
+[data-animate="zoomInUp"].is-visible         { animation-name: zoomInUp; }
+
+[data-animate="bounceIn"].is-visible         { animation-name: bounceIn; }
+[data-animate="bounceInDown"].is-visible     { animation-name: bounceInDown; }
+[data-animate="bounceInLeft"].is-visible     { animation-name: bounceInLeft; }
+[data-animate="bounceInRight"].is-visible    { animation-name: bounceInRight; }
+[data-animate="bounceInUp"].is-visible       { animation-name: bounceInUp; }
+
+[data-animate="slideInDown"].is-visible      { animation-name: slideInDown; }
+[data-animate="slideInLeft"].is-visible      { animation-name: slideInLeft; }
+[data-animate="slideInRight"].is-visible     { animation-name: slideInRight; }
+[data-animate="slideInUp"].is-visible        { animation-name: slideInUp; }
+
+[data-animate="rotateIn"].is-visible          { animation-name: rotateIn; }
+[data-animate="rotateInDownLeft"].is-visible  { animation-name: rotateInDownLeft; }
+[data-animate="rotateInDownRight"].is-visible { animation-name: rotateInDownRight; }
+[data-animate="rotateInUpLeft"].is-visible    { animation-name: rotateInUpLeft; }
+[data-animate="rotateInUpRight"].is-visible   { animation-name: rotateInUpRight; }
+
+[data-animate="lightSpeedIn"].is-visible     { animation-name: lightSpeedIn; }
+[data-animate="rollIn"].is-visible           { animation-name: rollIn; }
+
+/* Legacy theme values (backward compatible) */
+[data-animate="fade-up"].is-visible          { animation-name: fadeInUp; }
+[data-animate="fade-down"].is-visible        { animation-name: fadeInDown; }
+[data-animate="fade-left"].is-visible        { animation-name: fadeInLeft; }
+[data-animate="fade-right"].is-visible       { animation-name: fadeInRight; }
+[data-animate="fade-in"].is-visible          { animation-name: fadeIn; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * KEYFRAMES — derived from Animate.css (MIT, Daniel Eden)
+ * https://github.com/animate-css/animate.css
+ * ═════════════════════════════════════════════════════════════════════ */
+
+/* ─── Fading ─── */
+
+@keyframes fadeIn {
+	from { opacity: 0; }
+	to   { opacity: 1; }
+}
+
+@keyframes fadeInDown {
+	from { opacity: 0; transform: translate3d(0, -100%, 0); }
+	to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes fadeInLeft {
+	from { opacity: 0; transform: translate3d(-100%, 0, 0); }
+	to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes fadeInRight {
+	from { opacity: 0; transform: translate3d(100%, 0, 0); }
+	to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes fadeInUp {
+	from { opacity: 0; transform: translate3d(0, 100%, 0); }
+	to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+/* ─── Zooming ─── */
+
+@keyframes zoomIn {
+	from { opacity: 0; transform: scale3d(0.3, 0.3, 0.3); }
+	50%  { opacity: 1; }
+}
+
+@keyframes zoomInDown {
+	from {
+		opacity: 0;
+		transform: scale3d(0.1, 0.1, 0.1) translate3d(0, -1000px, 0);
+		animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+	}
+	60% {
+		opacity: 1;
+		transform: scale3d(0.475, 0.475, 0.475) translate3d(0, 60px, 0);
+		animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1);
+	}
+}
+
+@keyframes zoomInLeft {
+	from {
+		opacity: 0;
+		transform: scale3d(0.1, 0.1, 0.1) translate3d(-1000px, 0, 0);
+		animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+	}
+	60% {
+		opacity: 1;
+		transform: scale3d(0.475, 0.475, 0.475) translate3d(10px, 0, 0);
+		animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1);
+	}
+}
+
+@keyframes zoomInRight {
+	from {
+		opacity: 0;
+		transform: scale3d(0.1, 0.1, 0.1) translate3d(1000px, 0, 0);
+		animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+	}
+	60% {
+		opacity: 1;
+		transform: scale3d(0.475, 0.475, 0.475) translate3d(-10px, 0, 0);
+		animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1);
+	}
+}
+
+@keyframes zoomInUp {
+	from {
+		opacity: 0;
+		transform: scale3d(0.1, 0.1, 0.1) translate3d(0, 1000px, 0);
+		animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+	}
+	60% {
+		opacity: 1;
+		transform: scale3d(0.475, 0.475, 0.475) translate3d(0, -60px, 0);
+		animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1);
+	}
+}
+
+/* ─── Bouncing ─── */
+
+@keyframes bounceIn {
+	0%, 20%, 40%, 60%, 80%, to { animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1); }
+	0%   { opacity: 0; transform: scale3d(0.3, 0.3, 0.3); }
+	20%  { transform: scale3d(1.1, 1.1, 1.1); }
+	40%  { transform: scale3d(0.9, 0.9, 0.9); }
+	60%  { opacity: 1; transform: scale3d(1.03, 1.03, 1.03); }
+	80%  { transform: scale3d(0.97, 0.97, 0.97); }
+	to   { opacity: 1; transform: scale3d(1, 1, 1); }
+}
+
+@keyframes bounceInDown {
+	0%, 60%, 75%, 90%, to { animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1); }
+	0%   { opacity: 0; transform: translate3d(0, -3000px, 0); }
+	60%  { opacity: 1; transform: translate3d(0, 25px, 0); }
+	75%  { transform: translate3d(0, -10px, 0); }
+	90%  { transform: translate3d(0, 5px, 0); }
+	to   { transform: translate3d(0, 0, 0); }
+}
+
+@keyframes bounceInLeft {
+	0%, 60%, 75%, 90%, to { animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1); }
+	0%   { opacity: 0; transform: translate3d(-3000px, 0, 0); }
+	60%  { opacity: 1; transform: translate3d(25px, 0, 0); }
+	75%  { transform: translate3d(-10px, 0, 0); }
+	90%  { transform: translate3d(5px, 0, 0); }
+	to   { transform: translate3d(0, 0, 0); }
+}
+
+@keyframes bounceInRight {
+	0%, 60%, 75%, 90%, to { animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1); }
+	0%   { opacity: 0; transform: translate3d(3000px, 0, 0); }
+	60%  { opacity: 1; transform: translate3d(-25px, 0, 0); }
+	75%  { transform: translate3d(10px, 0, 0); }
+	90%  { transform: translate3d(-5px, 0, 0); }
+	to   { transform: translate3d(0, 0, 0); }
+}
+
+@keyframes bounceInUp {
+	0%, 60%, 75%, 90%, to { animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1); }
+	0%   { opacity: 0; transform: translate3d(0, 3000px, 0); }
+	60%  { opacity: 1; transform: translate3d(0, -20px, 0); }
+	75%  { transform: translate3d(0, 10px, 0); }
+	90%  { transform: translate3d(0, -5px, 0); }
+	to   { transform: translate3d(0, 0, 0); }
+}
+
+/* ─── Sliding ─── */
+
+@keyframes slideInDown {
+	from { transform: translate3d(0, -100%, 0); visibility: visible; }
+	to   { transform: translate3d(0, 0, 0); }
+}
+
+@keyframes slideInLeft {
+	from { transform: translate3d(-100%, 0, 0); visibility: visible; }
+	to   { transform: translate3d(0, 0, 0); }
+}
+
+@keyframes slideInRight {
+	from { transform: translate3d(100%, 0, 0); visibility: visible; }
+	to   { transform: translate3d(0, 0, 0); }
+}
+
+@keyframes slideInUp {
+	from { transform: translate3d(0, 100%, 0); visibility: visible; }
+	to   { transform: translate3d(0, 0, 0); }
+}
+
+/* ─── Rotating ─── */
+
+@keyframes rotateIn {
+	from { opacity: 0; transform: rotate3d(0, 0, 1, -200deg); transform-origin: center; }
+	to   { opacity: 1; transform: translate3d(0, 0, 0); transform-origin: center; }
+}
+
+@keyframes rotateInDownLeft {
+	from { opacity: 0; transform: rotate3d(0, 0, 1, -45deg); transform-origin: left bottom; }
+	to   { opacity: 1; transform: translate3d(0, 0, 0); transform-origin: left bottom; }
+}
+
+@keyframes rotateInDownRight {
+	from { opacity: 0; transform: rotate3d(0, 0, 1, 45deg); transform-origin: right bottom; }
+	to   { opacity: 1; transform: translate3d(0, 0, 0); transform-origin: right bottom; }
+}
+
+@keyframes rotateInUpLeft {
+	from { opacity: 0; transform: rotate3d(0, 0, 1, 45deg); transform-origin: left bottom; }
+	to   { opacity: 1; transform: translate3d(0, 0, 0); transform-origin: left bottom; }
+}
+
+@keyframes rotateInUpRight {
+	from { opacity: 0; transform: rotate3d(0, 0, 1, -90deg); transform-origin: right bottom; }
+	to   { opacity: 1; transform: translate3d(0, 0, 0); transform-origin: right bottom; }
+}
+
+/* ─── Light Speed ─── */
+
+@keyframes lightSpeedIn {
+	from { opacity: 0; transform: translate3d(100%, 0, 0) skewX(-30deg); }
+	60%  { opacity: 1; transform: skewX(20deg); }
+	80%  { opacity: 1; transform: skewX(-5deg); }
+	to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+/* ─── Specials ─── */
+
+@keyframes rollIn {
+	from { opacity: 0; transform: translate3d(-100%, 0, 0) rotate3d(0, 0, 1, -120deg); }
+	to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
