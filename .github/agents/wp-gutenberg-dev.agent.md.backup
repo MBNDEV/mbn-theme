@@ -103,7 +103,7 @@ When creating a new block, create a directory `blocks/{blockname}/` with these f
 - Follow WordPress coding standards (WPCS)
 - Use phpcs for linting: `composer run lint`
 - Namespace: `CustomTheme\Blocks` for blocks
-- Text domain: `'blacklineguardianfund-theme'`
+- Text domain: `'mbn-theme'`
 - Type hints for all parameters and return types
 - DocBlocks for all classes, methods, properties
 - Security: Always use esc_html(), esc_url(), esc_attr(), wp_kses()
@@ -158,32 +158,32 @@ Define fields in private `get_field_definitions()` method:
 private static function get_field_definitions(): array {
   return array(
     // Text fields
-    Field::make( 'text', 'heading', __( 'Heading', 'blacklineguardianfund-theme' ) )
-      ->set_help_text( __( 'Main heading text', 'blacklineguardianfund-theme' ) ),
+    Field::make( 'text', 'heading', __( 'Heading', 'mbn-theme' ) )
+      ->set_help_text( __( 'Main heading text', 'mbn-theme' ) ),
     
     // Rich text
-    Field::make( 'rich_text', 'content', __( 'Content', 'blacklineguardianfund-theme' ) ),
+    Field::make( 'rich_text', 'content', __( 'Content', 'mbn-theme' ) ),
     
     // Image upload
-    Field::make( 'image', 'background_image', __( 'Background Image', 'blacklineguardianfund-theme' ) ),
+    Field::make( 'image', 'background_image', __( 'Background Image', 'mbn-theme' ) ),
     
     // Select dropdown
-    Field::make( 'select', 'button_style', __( 'Button Style', 'blacklineguardianfund-theme' ) )
+    Field::make( 'select', 'button_style', __( 'Button Style', 'mbn-theme' ) )
       ->add_options( array(
-        'primary'   => __( 'Primary', 'blacklineguardianfund-theme' ),
-        'secondary' => __( 'Secondary', 'blacklineguardianfund-theme' ),
-        'outline'   => __( 'Outline', 'blacklineguardianfund-theme' ),
+        'primary'   => __( 'Primary', 'mbn-theme' ),
+        'secondary' => __( 'Secondary', 'mbn-theme' ),
+        'outline'   => __( 'Outline', 'mbn-theme' ),
       ) ),
     
     // Checkbox
-    Field::make( 'checkbox', 'open_new_tab', __( 'Open in New Tab', 'blacklineguardianfund-theme' ) ),
+    Field::make( 'checkbox', 'open_new_tab', __( 'Open in New Tab', 'mbn-theme' ) ),
     
     // Complex/Repeater fields
-    Field::make( 'complex', 'features', __( 'Features', 'blacklineguardianfund-theme' ) )
+    Field::make( 'complex', 'features', __( 'Features', 'mbn-theme' ) )
       ->add_fields( array(
-        Field::make( 'text', 'title', __( 'Feature Title', 'blacklineguardianfund-theme' ) ),
-        Field::make( 'text', 'description', __( 'Description', 'blacklineguardianfund-theme' ) ),
-        Field::make( 'image', 'icon', __( 'Icon', 'blacklineguardianfund-theme' ) ),
+        Field::make( 'text', 'title', __( 'Feature Title', 'mbn-theme' ) ),
+        Field::make( 'text', 'description', __( 'Description', 'mbn-theme' ) ),
+        Field::make( 'image', 'icon', __( 'Icon', 'mbn-theme' ) ),
       ) ),
   );
 }
@@ -221,14 +221,14 @@ function Edit({ attributes, setAttributes }) {
   return (
     <>
       <InspectorControls>
-        <PanelBody title={__('Content Settings', 'blacklineguardianfund-theme')}>
+        <PanelBody title={__('Content Settings', 'mbn-theme')}>
           <TextControl
-            label={__('Heading', 'blacklineguardianfund-theme')}
+            label={__('Heading', 'mbn-theme')}
             value={heading}
             onChange={(value) => setAttributes({ heading: value })}
           />
           <SelectControl
-            label={__('Button Style', 'blacklineguardianfund-theme')}
+            label={__('Button Style', 'mbn-theme')}
             value={buttonStyle}
             options={[
               { label: 'Primary', value: 'primary' },
@@ -238,9 +238,9 @@ function Edit({ attributes, setAttributes }) {
             onChange={(value) => setAttributes({ buttonStyle: value })}
           />
         </PanelBody>
-        <PanelBody title={__('Layout Settings', 'blacklineguardianfund-theme')}>
+        <PanelBody title={__('Layout Settings', 'mbn-theme')}>
           <ToggleControl
-            label={__('Full Width Section', 'blacklineguardianfund-theme')}
+            label={__('Full Width Section', 'mbn-theme')}
             checked={isFullWidth}
             onChange={(value) => setAttributes({ isFullWidth: value })}
           />
@@ -262,7 +262,7 @@ import { RichText } from '@wordpress/block-editor';
   tagName="h2"
   value={attributes.heading}
   onChange={(value) => setAttributes({ heading: value })}
-  placeholder={__('Enter heading...', 'blacklineguardianfund-theme')}
+  placeholder={__('Enter heading...', 'mbn-theme')}
   className="text-3xl font-bold"
 />
 
@@ -290,7 +290,7 @@ import { Button } from '@wordpress/components';
     value={attributes.imageId}
     render={({ open }) => (
       <Button onClick={open} variant="primary">
-        {attributes.imageUrl ? __('Replace Image', 'blacklineguardianfund-theme') : __('Select Image', 'blacklineguardianfund-theme')}
+        {attributes.imageUrl ? __('Replace Image', 'mbn-theme') : __('Select Image', 'mbn-theme')}
       </Button>
     )}
   />
@@ -309,7 +309,7 @@ import { URLInput } from '@wordpress/block-editor';
 <URLInput
   value={attributes.buttonUrl}
   onChange={(value) => setAttributes({ buttonUrl: value })}
-  placeholder={__('Enter URL...', 'blacklineguardianfund-theme')}
+  placeholder={__('Enter URL...', 'mbn-theme')}
 />
 ```
 
@@ -343,12 +343,12 @@ When asked to create a new block or feature:
 {
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 3,
-  "name": "blacklineguardianfund-theme/testimonial",
+  "name": "mbn-theme/testimonial",
   "title": "Testimonial",
   "category": "mbn-blocks",
   "icon": "format-quote",
   "description": "Display a customer testimonial",
-  "textdomain": "blacklineguardianfund-theme",
+  "textdomain": "mbn-theme",
   "editorScript": "file:./index.js",
   "editorStyle": "file:./editor.css",
   "style": "file:./style.css",
@@ -389,14 +389,14 @@ export default function Edit({ attributes, setAttributes }) {
   return (
     <>
       <InspectorControls>
-        <PanelBody title={__('Author Image', 'blacklineguardianfund-theme')}>
+        <PanelBody title={__('Author Image', 'mbn-theme')}>
           <MediaUpload
             onSelect={(media) => setAttributes({ imageUrl: media.url, imageId: media.id })}
             allowedTypes={['image']}
             value={imageId}
             render={({ open }) => (
               <Button onClick={open} variant="primary">
-                {imageUrl ? __('Replace Image', 'blacklineguardianfund-theme') : __('Select Image', 'blacklineguardianfund-theme')}
+                {imageUrl ? __('Replace Image', 'mbn-theme') : __('Select Image', 'mbn-theme')}
               </Button>
             )}
           />
@@ -408,7 +408,7 @@ export default function Edit({ attributes, setAttributes }) {
           tagName="blockquote"
           value={quote}
           onChange={(value) => setAttributes({ quote: value })}
-          placeholder={__('Enter testimonial quote...', 'blacklineguardianfund-theme')}
+          placeholder={__('Enter testimonial quote...', 'mbn-theme')}
           className="text-lg italic text-gray-700 mb-6"
         />
         <div className="flex items-center gap-4">
@@ -420,14 +420,14 @@ export default function Edit({ attributes, setAttributes }) {
               tagName="p"
               value={authorName}
               onChange={(value) => setAttributes({ authorName: value })}
-              placeholder={__('Author name...', 'blacklineguardianfund-theme')}
+              placeholder={__('Author name...', 'mbn-theme')}
               className="font-bold text-gray-900"
             />
             <RichText
               tagName="p"
               value={authorTitle}
               onChange={(value) => setAttributes({ authorTitle: value })}
-              placeholder={__('Author title...', 'blacklineguardianfund-theme')}
+              placeholder={__('Author title...', 'mbn-theme')}
               className="text-sm text-gray-600"
             />
           </div>

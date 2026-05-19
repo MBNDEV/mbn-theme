@@ -22,7 +22,7 @@ function get_global_button( $args = array() ) {
 	  'target'        => '_self',
 	  'icon_url'      => '',
 	  'icon_position' => 'after',
-	  'icon_alt'      => __( 'Icon', 'blacklineguardianfund-theme' ),
+	  'icon_alt'      => __( 'Icon', 'mbn-theme' ),
 	  'class'         => '',
 	  'new_window'    => false,
   );

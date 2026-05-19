@@ -69,6 +69,14 @@ function custom_theme_get_font_presets(): array {
 			  'axis' => 'wght@300;400;600;700',
 		  ),
 	  ),
+	  'titillium_web'    => array(
+		  'label'  => __( 'Titillium Web', 'mbn-theme' ),
+		  'stack'  => '"Titillium Web", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+		  'google' => array(
+			  'name' => 'Titillium Web',
+			  'axis' => 'wght@300;400;600;700',
+		  ),
+	  ),
 	  'merriweather'     => array(
 		  'label'  => __( 'Merriweather', 'mbn-theme' ),
 		  'stack'  => 'Merriweather, ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',

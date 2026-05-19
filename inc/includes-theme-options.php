@@ -3,7 +3,7 @@
  * Native WordPress Theme Options (replaces Carbon Fields PresetOptionsContainer).
  * Appearance > Theme Options
  *
- * @package BlackLineSecurityOps
+ * @package BlackLineGuardianFund
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
