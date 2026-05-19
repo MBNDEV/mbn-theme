@@ -6,7 +6,7 @@ Custom WordPress theme for My Biz Niche.
 
 - Theme Name: `Black Line Security Ops`
 - Description: `Custom Theme for MBN`
-- Version: `1.1.5`
+- Version: `1.1.0`
 - Author: `My Biz Niche`
 - Theme URI: [https://github.com/MBNDEV/mbn-theme](https://github.com/MBNDEV/mbn-theme)
 - Author URI: [https://www.mybizniche.com/](https://www.mybizniche.com/)
