@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add your custom CSS here */
+
+/* Example: Custom components */
+/*
+@layer components {
+	.btn-primary {
+		@apply px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700;
+	}
+}
+*/
+
+/* Example: Custom utilities */
+/*
+@layer utilities {
+	.text-shadow {
+		text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+	}
+}
+*/

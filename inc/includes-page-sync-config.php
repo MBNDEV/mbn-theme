@@ -54,8 +54,8 @@ function custom_theme_get_source_domains() {
 	// If no custom URLs set, return default fallback
   if ( empty( $domains ) ) {
       return array(
-          'https://blacklineguardianfund.dev.local',
-          'http://blacklineguardianfund.dev.local',
+          'https://example.dev.local',
+          'http://example.dev.local',
       );
   }
 

@@ -2,13 +2,51 @@
 
 ## Why Use Child Themes?
 
-Child themes allow you to customize MBN Theme for specific projects while keeping the parent theme intact. This approach:
+Child themes allow you to customize MBN Theme for specific **client projects** while keeping the parent theme intact. This approach:
 
 - ✅ **Preserves parent theme updates** - Get bug fixes and new features
-- ✅ **Isolates customizations** - Project-specific changes stay separate
+- ✅ **Isolates client customizations** - Client-specific changes stay separate
 - ✅ **Enables version control** - Lock to specific parent versions
-- ✅ **Simplifies maintenance** - Multiple projects, one parent theme
+- ✅ **Simplifies maintenance** - Multiple clients share one parent theme
 - ✅ **Reduces conflicts** - Changes don't affect other projects
+
+## Architecture: Parent vs Child
+
+### MBN Theme (Parent) Contains:
+- 🌐 **Global infrastructure** - Build system, WordPress integration
+- 📦 **Reusable blocks** - Hero sections, contact forms, navigation
+- 🔧 **Shared functionality** - Import/export tools, sync system
+- 📚 **Documentation** - Guides, standards, workflows
+
+### Child Theme (Your Client Project) Contains:
+- 🎨 **Client branding** - Colors, fonts, custom CSS
+- 📦 **Client-specific blocks** - Unique to this project
+- ⚙️ **Custom post types** - Client's content types
+- 🗂️ **Custom menus** - Client navigation structure
+- 📄 **Custom templates** - Client-specific layouts
+
+**Golden Rule:** If it's useful for other clients → contribute to parent. If it's specific to this client → keep in child theme.
+
+## What Goes in the Child Theme?
+
+### ✅ Always Create in Child Theme:
+- **Custom Gutenberg blocks** - Project-specific blocks
+- **Custom navigation menus** - Additional menu locations
+- **Custom post types** - Portfolio, testimonials, case studies, etc.
+- **Custom taxonomies** - Project-specific categories/tags
+- **Project-specific styles** - Brand colors, custom CSS
+- **Custom page templates** - Landing pages, special layouts
+- **Custom functions** - Project-specific functionality
+- **Theme customizer options** - Client-specific settings
+- **Custom widgets** - Project-specific widget areas
+- **Custom shortcodes** - Project-specific shortcodes
+
+### ❌ Keep in Parent Theme:
+- **Core functionality** - Features needed across all projects
+- **Base blocks** - Reusable blocks for all sites
+- **Framework features** - Theme architecture, build system
+- **Bug fixes** - Issues affecting all projects
+- **Performance improvements** - Optimizations for everyone
 
 ## Quick Setup
 
@@ -66,27 +104,49 @@ npm run build
 wp-content/themes/
 ├── mbn-theme/                    # Parent (v1.1.0)
 │   ├── version locked via git tag
-│   └── shared across all projects
+│   ├── shared across all projects
+│   └── blocks/                   # Parent theme blocks (shared)
+│       ├── hero-section/
+│       ├── contact-form/
+│       └── ...
 │
 └── client-project-theme/         # Child theme
     ├── style.css                 # Theme info + custom CSS
-    ├── functions.php             # Custom functions
+    ├── functions.php             # Custom functions & hooks
     ├── screenshot.png            # Theme preview
     │
     ├── assets/                   # Project-specific assets
     │   ├── css/
+    │   │   └── custom.css        # Additional styles
     │   ├── js/
+    │   │   └── custom.js         # Custom JavaScript
     │   └── images/
+    │       └── logo.png          # Project images
     │
-    ├── blocks/                   # Custom blocks
-    │   └── client-custom-block/
+    ├── blocks/                   # 🎨 Custom blocks (child theme only)
+    │   ├── custom-cta-block/     # Project-specific CTA block
+    │   │   ├── block.json
+    │   │   ├── index.js
+    │   │   ├── edit.js
+    │   │   ├── save.js
+    │   │   └── style.css
+    │   ├── testimonial-slider/   # Project testimonials
+    │   └── team-member-grid/     # Project team display
     │
     ├── template-parts/           # Override parent templates
-    │   └── header-template.php
+    │   └── header-template.php   # Custom header
     │
-    └── page-templates/           # Custom page templates
-        └── template-landing.php
+    └── page-templates/           # 📄 Custom page templates
+        ├── template-landing.php  # Landing page
+        └── template-portfolio.php # Portfolio page
 ```
+
+**Key Points:**
+- ✅ **Custom blocks go in child theme** (`blocks/` folder)
+- ✅ **Custom menus registered in child `functions.php`**
+- ✅ **Custom post types in child theme**
+- ✅ **Project assets stay in child theme**
+- ⚠️ **Parent blocks are inherited automatically**
 
 ### Customization Examples
 
@@ -251,6 +311,150 @@ wp-content/themes/
 ```
 
 Each child theme can use different parent versions as needed.
+
+---
+
+## Contributing Blocks Back to Parent
+
+If you build a block in your child theme that would be useful for other clients, contribute it back to mbn-theme!
+
+### When to Contribute
+
+**✅ Contribute if the block is:**
+- Generic and reusable across projects
+- Not tied to specific client branding
+- Useful for other clients
+- Examples: Hero sections, testimonial sliders, pricing tables, team grids, FAQ sections
+
+**❌ Keep in child if the block is:**
+- Specific to this client's business logic
+- Contains hardcoded client data
+- One-off customization
+- Examples: Client-specific calculators, custom API integrations, unique workflows
+
+### How to Contribute a Block
+
+**Step 1: Identify a reusable block**
+```bash
+# You built this in your child theme
+child-theme/blocks/testimonial-slider/
+```
+
+**Step 2: Generalize it**
+- Remove client-specific branding
+- Make colors/fonts configurable via attributes
+- Remove hardcoded content
+- Add clear documentation
+
+```javascript
+// ❌ Bad - Hardcoded client color
+const blockStyle = { backgroundColor: '#ClientBlue' };
+
+// ✅ Good - Configurable
+const blockStyle = { 
+    backgroundColor: attributes.backgroundColor || '#000' 
+};
+```
+
+**Step 3: Copy to parent theme**
+```bash
+cd mbn-theme
+mkdir -p blocks/testimonial-slider
+# Copy generalized files
+```
+
+**Step 4: Test in parent**
+```bash
+npm run build
+# Test on a demo site or staging environment
+```
+
+**Step 5: Create pull request**
+```bash
+git checkout -b feature/testimonial-slider
+git add blocks/testimonial-slider
+git commit -m "feat: add reusable testimonial slider block"
+git push origin feature/testimonial-slider
+# Open PR for review
+```
+
+**Step 6: After merge, create release**
+```bash
+# Once merged to master
+php scripts/bump-version.php minor  # v1.2.0
+git tag -a v1.2.0 -m "Release v1.2.0 - Add testimonial slider"
+git push origin master --tags
+```
+
+**Step 7: Update child themes**
+
+Now all your child themes can use the new block:
+```bash
+cd ../client-project-theme
+cd mbn-theme
+git checkout v1.2.0
+npm run build
+# Testimonial slider now available!
+```
+
+### Example: Real Workflow
+
+**Scenario:** You built a custom "Team Grid" block for Client A.
+
+1. **Built in child theme first:**
+   ```
+   client-a-theme/blocks/team-grid/
+   ```
+
+2. **Client A approves, it works great**
+
+3. **You realize Client B could use this too**
+
+4. **Generalize the block:**
+   - Remove Client A's specific styling
+   - Make avatar size configurable
+   - Make colors customizable
+   - Add documentation
+
+5. **Move to parent:**
+   ```bash
+   cp -r client-a-theme/blocks/team-grid mbn-theme/blocks/
+   cd mbn-theme
+   # Edit to make generic
+   git add blocks/team-grid
+   git commit -m "feat: add reusable team grid block"
+   ```
+
+6. **Release new version:**
+   ```bash
+   php scripts/bump-version.php minor  # Now v1.3.0
+   git tag -a v1.3.0 -m "Add team grid block"
+   git push origin master --tags
+   ```
+
+7. **Update both client themes:**
+   ```bash
+   # Client B immediately benefits
+   cd client-b-theme/mbn-theme
+   git checkout v1.3.0
+   npm run build
+   # Team grid block now available!
+   
+   # Client A can also upgrade (optional)
+   cd client-a-theme/mbn-theme
+   git checkout v1.3.0
+   # Can remove their custom version now
+   ```
+
+### Benefits of Contributing Back
+
+- ✅ **Reuse across projects** - Build once, use everywhere
+- ✅ **Shared maintenance** - Bug fixes benefit all projects
+- ✅ **Team collaboration** - Others can improve your blocks
+- ✅ **Faster development** - Less rebuilding for each client
+- ✅ **Consistency** - Similar features across projects
+
+---
 
 ## Best Practices
 

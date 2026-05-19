@@ -609,7 +609,7 @@ export default function Edit({ attributes, setAttributes }) {
 ### Auto-Discovery in functions.php
 
 ```php
-function blacklineguardianfund_register_blocks() {
+function mbn_theme_register_blocks() {
   $blocks_dir = __DIR__ . '/blocks';
   $block_folders = glob( $blocks_dir . '/*', GLOB_ONLYDIR );
   
@@ -619,13 +619,13 @@ function blacklineguardianfund_register_blocks() {
     }
   }
 }
-add_action( 'init', 'blacklineguardianfund_register_blocks' );
+add_action( 'init', 'mbn_theme_register_blocks' );
 ```
 
 ### Custom Block Category
 
 ```php
-function blacklineguardianfund_register_block_category( $categories ) {
+function mbn_theme_register_block_category( $categories ) {
   return array_merge(
     [[
       'slug'  => 'mbn-blocks',
@@ -635,7 +635,7 @@ function blacklineguardianfund_register_block_category( $categories ) {
     $categories
   );
 }
-add_filter( 'block_categories_all', 'blacklineguardianfund_register_block_category' );
+add_filter( 'block_categories_all', 'mbn_theme_register_block_category' );
 ```
 
 ## Build & Development

@@ -1003,7 +1003,7 @@ function custom_theme_render_page_sync_page() {
 							id="local-url" 
 							name="local_url" 
 							value="<?php echo esc_attr( $local_url ); ?>"
-							placeholder="https://blacklineguardianfund.dev.local"
+							placeholder="https://example.dev.local"
 							style="width: 100%; max-width: 500px; padding: 8px 12px; font-size: 14px; border: 1px solid #8c8f94; border-radius: 4px;"
 						>
 						<p style="margin: 5px 0 0; color: #666; font-size: 13px;">
@@ -1021,7 +1021,7 @@ function custom_theme_render_page_sync_page() {
 							id="deployment-url" 
 							name="deployment_url" 
 							value="<?php echo esc_attr( $deployment_url ); ?>"
-							placeholder="https://staging2.blacklineguardianfund.com"
+							placeholder="https://staging.example.com"
 							style="width: 100%; max-width: 500px; padding: 8px 12px; font-size: 14px; border: 1px solid #8c8f94; border-radius: 4px;"
 						>
 						<p style="margin: 5px 0 0; color: #666; font-size: 13px;">

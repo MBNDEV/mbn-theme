@@ -30,7 +30,7 @@ require_once get_theme_file_path( 'template-parts/button.php' );
 /**
  * Theme setup
  */
-function blacklineguardianfund_theme_setup() {
+function mbn_theme_setup() {
 	// Add support for block styles.
 	add_theme_support( 'wp-block-styles' );
 
@@ -68,7 +68,7 @@ function blacklineguardianfund_theme_setup() {
   );
 }
 
-add_action( 'after_setup_theme', 'blacklineguardianfund_theme_setup' );
+add_action( 'after_setup_theme', 'mbn_theme_setup' );
 
 // Load theme components.
 require_once get_theme_file_path( 'block-registry.php' );
@@ -93,11 +93,11 @@ require_once get_theme_file_path( 'inc/includes-animation-helpers.php' );      /
 /**
  * Enqueue scroll animation assets (frontend only).
  */
-function blacklineguardianfund_enqueue_scroll_animations() {
+function mbn_theme_enqueue_scroll_animations() {
 	wp_enqueue_script( 'jquery' );
 
 	wp_enqueue_style(
-      'blacklineguardianfund-scroll-animations',
+      'mbn-theme-scroll-animations',
       get_theme_file_uri( 'assets/css/scroll-animations.css' ),
       array(),
       filemtime( get_theme_file_path( 'assets/css/scroll-animations.css' ) )
@@ -134,17 +134,17 @@ function blacklineguardianfund_enqueue_scroll_animations() {
 	$animation_css .= '[data-animate="lightSpeedIn"].is-visible{animation-name:lightSpeedIn!important}';
 	$animation_css .= '[data-animate="rollIn"].is-visible{animation-name:rollIn!important}';
 
-	wp_add_inline_style( 'blacklineguardianfund-scroll-animations', $animation_css );
+	wp_add_inline_style( 'mbn-theme-scroll-animations', $animation_css );
 
 	wp_enqueue_script(
-      'blacklineguardianfund-scroll-animations',
+      'mbn-theme-scroll-animations',
       get_theme_file_uri( 'assets/js/scroll-animations.js' ),
       array( 'jquery' ),
       filemtime( get_theme_file_path( 'assets/js/scroll-animations.js' ) ),
       true
 	);
 }
-add_action( 'wp_enqueue_scripts', 'blacklineguardianfund_enqueue_scroll_animations' );
+add_action( 'wp_enqueue_scripts', 'mbn_theme_enqueue_scroll_animations' );
 
 PucFactory::buildUpdateChecker(
   'https://github.com/MBNDEV/mbn-theme',
@@ -158,7 +158,7 @@ PucFactory::buildUpdateChecker(
  *
  * @return bool Returns true to disable CSS only if the block is detected.
  */
-function blacklineguardianfund_conditional_gform_css() {
+function mbn_theme_conditional_gform_css() {
   if ( is_admin() ) {
       return false; // Always load in admin.
   }
@@ -172,7 +172,7 @@ function blacklineguardianfund_conditional_gform_css() {
 
 	return false; // Keep default CSS for other forms.
 }
-add_filter( 'gform_disable_css', 'blacklineguardianfund_conditional_gform_css' );
+add_filter( 'gform_disable_css', 'mbn_theme_conditional_gform_css' );
 
 /**
  * Custom Gravity Forms validation for donation amount field.
@@ -184,7 +184,7 @@ add_filter( 'gform_disable_css', 'blacklineguardianfund_conditional_gform_css' )
  * @param array $field The field object.
  * @return array Modified validation result.
  */
-function blacklineguardianfund_validate_donation_amount( $result, $value, $form, $field ) {
+function mbn_theme_validate_donation_amount( $result, $value, $form, $field ) {
 	// Check if this field has the donation-amount-field CSS class.
 	// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Gravity Forms core property.
   if ( ! empty( $field->cssClass ) && strpos( $field->cssClass, 'donation-amount-field' ) !== false ) {
@@ -200,4 +200,4 @@ function blacklineguardianfund_validate_donation_amount( $result, $value, $form,
 
 	return $result;
 }
-add_filter( 'gform_field_validation', 'blacklineguardianfund_validate_donation_amount', 10, 4 );
+add_filter( 'gform_field_validation', 'mbn_theme_validate_donation_amount', 10, 4 );

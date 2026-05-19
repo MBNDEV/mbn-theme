@@ -13,4 +13,4 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 ?>
-<!-- wp:mbn-theme/site-navbar {"logoUrl":"https://blacklineguardianfund.dev.local/wp-content/uploads/2026/04/img-logo-BGF-header.svg","logoId":22,"mobileMenuId":3} /-->
+<!-- wp:mbn-theme/site-navbar {"logoUrl":"https://example.dev.local/wp-content/uploads/logo.svg","logoId":22,"mobileMenuId":3} /-->

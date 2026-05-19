@@ -37,7 +37,7 @@ function get_global_button( $args = array() ) {
   $rel    = '_blank' === $target ? 'noopener noreferrer' : '';
 
   // Build button classes based on style.
-  $button_classes = blacklineguardianfund_get_button_classes( $args['style'], $args['class'] );
+  $button_classes = mbn_theme_get_button_classes( $args['style'], $args['class'] );
 
   $html = sprintf(
     '<a href="%1$s" target="%2$s" rel="%3$s" class="%4$s">',
@@ -83,7 +83,7 @@ function get_global_button( $args = array() ) {
  * @param string $extra Additional CSS classes.
  * @return string The button classes.
  */
-function blacklineguardianfund_get_button_classes( $style, $extra = '' ) {
+function mbn_theme_get_button_classes( $style, $extra = '' ) {
   $base_classes = array(
 	  'inline-flex',
 	  'items-center',

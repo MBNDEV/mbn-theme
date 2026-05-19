@@ -1,0 +1,11 @@
+.wp-block-mbn-child-theme-example-block {
+	padding: 1rem;
+	background-color: #f0f0f0;
+	border-left: 4px solid #0066cc;
+}
+
+.wp-block-mbn-child-theme-example-block p {
+	margin: 0;
+	font-size: 1rem;
+	line-height: 1.5;
+}

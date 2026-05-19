@@ -1,11 +1,48 @@
-# Black Line Security Ops
+# MBN Theme (Parent)
 
-Custom WordPress theme for My Biz Niche.
+**Global infrastructure theme for My Biz Niche projects.**
+
+This is the **parent theme** that provides shared infrastructure, reusable blocks, and global components for all client projects. It should not be customized for individual clients.
+
+## Purpose & Architecture
+
+### MBN Theme (This Parent Theme) Focuses On:
+
+✅ **Global Infrastructure**
+- Build system (Webpack, Tailwind, PostCSS)
+- Theme architecture and core functionality
+- WordPress standards and best practices
+- Automated deployment workflows
+- Version releasing system
+
+✅ **Reusable Blocks Library**
+- Global navigation blocks
+- Shared UI components (hero, contact forms, etc.)
+- Blocks contributed by all developers
+- Reusable across all client projects
+
+✅ **Shared Functionality**
+- Block template sync system
+- Page/navigation import/export tools
+- Theme options framework
+- Plugin Update Checker integration
+- WordPress coding standards
+
+### Child Themes Focus On:
+
+🎨 **Client-Specific Development**
+- Custom branding and styles
+- Client-specific blocks
+- Project requirements
+- Custom post types for the client
+- Client navigation menus
+
+**Rule:** Never add client-specific code to mbn-theme. Use child themes instead!
 
 ## Theme Details
 
-- Theme Name: `Black Line Security Ops`
-- Description: `Custom Theme for MBN`
+- Theme Name: `MBN Theme`
+- Description: `Global infrastructure theme with shared blocks and components`
 - Version: `1.1.0`
 - Author: `My Biz Niche`
 - Theme URI: [https://github.com/MBNDEV/mbn-theme](https://github.com/MBNDEV/mbn-theme)
@@ -35,30 +72,64 @@ Custom WordPress theme for My Biz Niche.
    ```bash
    npm run build
    ```
-5. In WordPress Admin, go to **Appearance > Themes** and activate **Black Line Guardian Fund Theme**.
+5. In WordPress Admin, go to **Appearance > Themes** and activate **MBN Theme**.
 
-## Child Theme Support
+**Important:** For client projects, always use child themes (see below).
 
-**Recommended for client projects:** Use child themes to customize MBN Theme for specific projects while keeping the parent theme intact.
+## Child Theme Support (For Client Projects)
+
+**Always use child themes for client work.** Never customize mbn-theme directly for a specific client.
+
+### Why Use Child Themes?
+
+- 🎨 **Client-specific work** - Branding, custom blocks, project features
+- ✅ **Safe updates** - Get parent theme updates without losing customizations
+- 🔒 **Project isolation** - Each client has their own theme
+- 📦 **Reusable parent** - mbn-theme stays clean for all projects
 
 ### Quick Start with Child Themes
 
 ```bash
-# Copy the starter template
+# Create a new child theme for your client
 cd wp-content/themes/
-cp -r mbn-theme/child-theme-starter client-project-theme
+php mbn-theme/scripts/create-child-theme.php acme-company-theme "Acme Company Theme"
 
-# Customize style.css with your project details
-# Edit functions.php for custom functionality
-# Activate child theme in WordPress Admin
+# Install dependencies
+cd acme-company-theme
+npm install
+
+# Start development
+npm run start
 ```
 
-### Benefits of Child Themes
+### What Goes in Child Theme vs Parent?
 
-- ✅ **Safe updates** - Get parent theme updates without losing customizations
-- ✅ **Project isolation** - Each project has its own customizations
-- ✅ **Version control** - Lock to specific parent theme versions
-- ✅ **Easy maintenance** - Multiple projects share one parent theme
+**Child Theme (Client-Specific):**
+- ✅ Client branding and colors
+- ✅ Client-specific custom blocks
+- ✅ Custom post types for this client
+- ✅ Client-specific navigation menus
+- ✅ Project-specific templates
+- ✅ Client requirements and features
+
+**Parent Theme (Global/Shared):**
+- ✅ Reusable blocks (hero, contact forms, etc.)
+- ✅ Global navigation components
+- ✅ Infrastructure and build system
+- ✅ Shared functionality across all projects
+- ✅ Blocks contributed by developers for reuse
+
+### Contributing Blocks Back to Parent
+
+**Found a block useful for other projects?** Contribute it back to mbn-theme:
+
+1. **Develop block in child theme** (client project)
+2. **Test thoroughly** on the client project
+3. **Generalize the block** (remove client-specific code)
+4. **Submit to mbn-theme** for review
+5. **Block becomes available** to all future projects
+
+Example: A testimonial slider you built for Client A can be contributed back and reused for Client B, C, D...
 
 ### Documentation
 

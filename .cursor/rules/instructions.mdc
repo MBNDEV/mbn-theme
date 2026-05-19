@@ -38,16 +38,16 @@ This is a WordPress theme. All PHP must pass `composer run lint` only do this af
 
 - No commented-out code
 - No TODO or FIXME comments — convert to tracked issues
-- All user-facing strings use `__()` or `_e()` with text domain `blacklineguardianfund-theme`
+- All user-facing strings use `__()` or `_e()` with text domain `mbn-theme`
 - Enqueue scripts via `wp_enqueue_scripts` — no inline `<script>` tags
 
 ## Carbon block (Gutenberg)
 
-Add `blocks/class-{name}.php` with `namespace CustomTheme\Blocks`, a `final` class extending `Abstract_Block`, and `register()` that defines the block with `Container::make( 'block', … )`, `Field::make( … )`, and `set_render_callback( array( self::class, 'render' ) )`. Add matching markup in `blocks-render/render-{name}.php`; in `render( $fields )`, map fields to args and load it with `get_template_part( 'blocks-render/render-{name}', null, $args )`. `carbon-loader.php` registers new block files automatically (no `functions.php` edit); run `composer dump-autoload` if other code references the class by name. Use the text domain `blacklineguardianfund-theme` for all user-facing strings.
+Add `blocks/class-{name}.php` with `namespace CustomTheme\Blocks`, a `final` class extending `Abstract_Block`, and `register()` that defines the block with `Container::make( 'block', … )`, `Field::make( … )`, and `set_render_callback( array( self::class, 'render' ) )`. Add matching markup in `blocks-render/render-{name}.php`; in `render( $fields )`, map fields to args and load it with `get_template_part( 'blocks-render/render-{name}', null, $args )`. `carbon-loader.php` registers new block files automatically (no `functions.php` edit); run `composer dump-autoload` if other code references the class by name. Use the text domain `mbn-theme` for all user-facing strings.
 
 ## Carbon container (admin / meta / options)
 
-Add `containers/class-{name}.php` with `namespace CustomTheme\Containers`, a `final` class extending `Abstract_Container`, and `register()` using `Container::make()` for the container type you need (`theme_options`, `post_meta`, etc.) plus `Field::make()` for each field. Discovery and registration work the same as blocks—no `functions.php` edit; run `composer dump-autoload` if other code references the new class. Use the text domain `blacklineguardianfund-theme` for all user-facing strings.
+Add `containers/class-{name}.php` with `namespace CustomTheme\Containers`, a `final` class extending `Abstract_Container`, and `register()` using `Container::make()` for the container type you need (`theme_options`, `post_meta`, etc.) plus `Field::make()` for each field. Discovery and registration work the same as blocks—no `functions.php` edit; run `composer dump-autoload` if other code references the new class. Use the text domain `mbn-theme` for all user-facing strings.
 
 ## Lint
 
