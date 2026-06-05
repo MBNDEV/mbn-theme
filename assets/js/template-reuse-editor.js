@@ -2,6 +2,7 @@
 	if (
 		! wp ||
 		! wp.apiFetch ||
+		! wp.blockEditor ||
 		! wp.blocks ||
 		! wp.components ||
 		! wp.data ||
@@ -18,7 +19,9 @@
 	var useState = wp.element.useState;
 	var __ = wp.i18n.__;
 	var apiFetch = wp.apiFetch;
+	var BlockPreview = wp.blockEditor.BlockPreview;
 	var Button = wp.components.Button;
+	var Modal = wp.components.Modal;
 	var Notice = wp.components.Notice;
 	var PanelBody = wp.components.PanelBody;
 	var Spinner = wp.components.Spinner;
@@ -37,6 +40,51 @@
 
 	function request( path ) {
 		return apiFetch( { path: path } );
+	}
+
+	function TemplatePreviewModal( props ) {
+		var template = props.template;
+		var onClose = props.onClose;
+		var blocks = parse( template.content || '' );
+
+		return el(
+			Modal,
+			{
+				title: ' ',
+				onRequestClose: onClose,
+				className: 'custom-theme-template-reuse__preview-modal is-fullscreen',
+				shouldCloseOnClickOutside: false,
+				shouldCloseOnEsc: true,
+				isDismissible: false,
+				size: 'fill',
+			},
+			blocks.length
+				? el(
+						'div',
+						{ className: 'custom-theme-template-reuse__preview' },
+						el( BlockPreview, {
+							blocks: blocks,
+							viewportWidth: window.innerWidth || 1200,
+						} )
+					)
+				: el(
+						Notice,
+						{ status: 'warning', isDismissible: false },
+						__( 'This template has no block content to preview.', 'mbn-theme' )
+					),
+			el(
+				'div',
+				{ className: 'custom-theme-template-reuse__preview-actions' },
+				el(
+					Button,
+					{
+						variant: 'secondary',
+						onClick: onClose,
+					},
+					__( 'Close', 'mbn-theme' )
+				)
+			)
+		);
 	}
 
 	function RemoteTemplatesPanel() {
@@ -58,6 +106,9 @@
 		var _useState6 = useState( '' );
 		var errorMessage = _useState6[ 0 ];
 		var setErrorMessage = _useState6[ 1 ];
+		var _useState7 = useState( null );
+		var previewTemplate = _useState7[ 0 ];
+		var setPreviewTemplate = _useState7[ 1 ];
 
 		useEffect( function () {
 			var isMounted = true;
@@ -159,80 +210,112 @@
 		}
 
 		return el(
-			'div',
-			{ className: 'custom-theme-template-reuse' },
-			errorMessage
-				? el(
-						Notice,
-						{
-							status: 'error',
-							isDismissible: true,
-							onRemove: function () {
-								setErrorMessage( '' );
+			wp.element.Fragment,
+			null,
+			el(
+				'div',
+				{ className: 'custom-theme-template-reuse' },
+				errorMessage
+					? el(
+							Notice,
+							{
+								status: 'error',
+								isDismissible: true,
+								onRemove: function () {
+									setErrorMessage( '' );
+								},
 							},
-						},
-						errorMessage
-					)
-				: null,
-			el( TabPanel, {
-				className: 'custom-theme-template-reuse__tabs',
-				activeClass: 'is-active',
-				tabs: sites.map( function ( site ) {
-					return {
-						name: String( site.index ),
-						title: site.site_name,
-						className: 'custom-theme-template-reuse__tab',
-					};
-				} ),
-				onSelect: function ( tabName ) {
-					setSelectedSite( tabName );
-				},
-			}, function ( tab ) {
-				var templates = templatesBySite[ tab.name ] || [];
+							errorMessage
+						)
+					: null,
+				el( TabPanel, {
+					className: 'custom-theme-template-reuse__tabs',
+					activeClass: 'is-active',
+					tabs: sites.map( function ( site ) {
+						return {
+							name: String( site.index ),
+							title: site.site_name,
+							className: 'custom-theme-template-reuse__tab',
+						};
+					} ),
+					onSelect: function ( tabName ) {
+						setSelectedSite( tabName );
+					},
+				}, function ( tab ) {
+					var templates = templatesBySite[ tab.name ] || [];
 
-				if ( isLoadingTemplates && selectedSite === tab.name ) {
+					if ( isLoadingTemplates && selectedSite === tab.name ) {
+						return el(
+							'div',
+							{ className: 'custom-theme-template-reuse__loading' },
+							el( Spinner ),
+							el( 'p', null, __( 'Loading templates...', 'mbn-theme' ) )
+						);
+					}
+
+					if ( ! templates.length ) {
+						return el(
+							Notice,
+							{ status: 'warning', isDismissible: false },
+							__( 'No block templates were returned for this site.', 'mbn-theme' )
+						);
+					}
+
 					return el(
 						'div',
-						{ className: 'custom-theme-template-reuse__loading' },
-						el( Spinner ),
-						el( 'p', null, __( 'Loading templates...', 'mbn-theme' ) )
-					);
-				}
-
-				if ( ! templates.length ) {
-					return el(
-						Notice,
-						{ status: 'warning', isDismissible: false },
-						__( 'No block templates were returned for this site.', 'mbn-theme' )
-					);
-				}
-
-				return el(
-					'div',
-					{ className: 'custom-theme-template-reuse__templates' },
-					templates.map( function ( template ) {
-						return el(
-							PanelBody,
-							{
-								key: template.id || template.slug,
-								title: template.title || template.slug,
-								initialOpen: false,
-							},
-							el( 'p', null, template.slug || '' ),
-							el(
-								Button,
+						{ className: 'custom-theme-template-reuse__templates' },
+						templates.map( function ( template ) {
+							return el(
+								PanelBody,
 								{
-									variant: 'primary',
-									onClick: function () {
-										appendTemplate( template );
-									},
+									key: template.id || template.slug,
+									title: template.title || template.slug,
+									initialOpen: false,
 								},
-								__( 'Append Template', 'mbn-theme' )
-							)
-						);
+								el(
+									'div',
+									{
+										className: 'custom-theme-template-reuse__actions',
+										style: {
+											display: 'flex',
+											flexWrap: 'wrap',
+											gap: '8px',
+										},
+									},
+									el(
+										Button,
+										{
+											variant: 'secondary',
+											onClick: function () {
+												setPreviewTemplate( template );
+											},
+										},
+										__( 'Preview', 'mbn-theme' )
+									),
+									el(
+										Button,
+										{
+											variant: 'primary',
+											onClick: function () {
+												appendTemplate( template );
+											},
+										},
+										__( 'Append Template', 'mbn-theme' )
+									)
+								)
+							);
+						} )
+					);
+				} )
+			),
+			previewTemplate
+				? el( TemplatePreviewModal, {
+						template: previewTemplate,
+						onClose: function () {
+							setPreviewTemplate( null );
+						},
 					} )
-				);
-			} )
+				: null
 		);
 	}
 

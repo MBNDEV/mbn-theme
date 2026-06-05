@@ -439,9 +439,16 @@ function custom_theme_enqueue_template_reuse_editor_assets(): void {
 	wp_enqueue_script(
       'custom-theme-template-reuse-editor',
       get_theme_file_uri( 'assets/js/template-reuse-editor.js' ),
-      array( 'wp-api-fetch', 'wp-blocks', 'wp-components', 'wp-data', 'wp-edit-post', 'wp-element', 'wp-i18n', 'wp-plugins' ),
+      array( 'wp-api-fetch', 'wp-block-editor', 'wp-blocks', 'wp-components', 'wp-data', 'wp-edit-post', 'wp-element', 'wp-i18n', 'wp-plugins' ),
       filemtime( $asset_path ),
       true
+	);
+
+	wp_register_style( 'custom-theme-template-reuse-editor', false, array(), (string) filemtime( $asset_path ) );
+	wp_enqueue_style( 'custom-theme-template-reuse-editor' );
+	wp_add_inline_style(
+      'custom-theme-template-reuse-editor',
+      '.custom-theme-template-reuse__preview-modal.is-fullscreen .components-modal__frame{width:100vw!important;max-width:100vw!important;height:100vh!important;max-height:100vh!important;margin:0!important;top:0!important;left:0!important;border-radius:0!important;transform:none!important}.custom-theme-template-reuse__preview-modal.is-fullscreen .components-modal__header{display:none!important}.custom-theme-template-reuse__preview-modal.is-fullscreen .components-modal__content{display:flex;flex-direction:column;height:100vh;max-height:100vh;margin:0;padding:0}.custom-theme-template-reuse__preview{flex:1;overflow-y:auto;padding:16px;background:#fff}.custom-theme-template-reuse__preview-actions{display:flex;justify-content:flex-end;padding:12px 16px;border-top:1px solid #dcdcde;background:#fff}'
 	);
 
 	wp_add_inline_script(
