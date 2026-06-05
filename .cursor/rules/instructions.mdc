@@ -4,11 +4,7 @@ globs: **/*.php
 alwaysApply: true
 ---
 
-# WordPress Theme Coding Standards
-
-This is a WordPress theme. All PHP must pass `composer run lint` only do this after all edits have been made (PHPCS with WordPress-Core, WordPress-Extra, WordPress-Docs).
-
-## Naming
+# Naming Conventions
 
 - Functions and variables: `snake_case`
 - Classes: `PascalCase`
@@ -38,99 +34,14 @@ This is a WordPress theme. All PHP must pass `composer run lint` only do this af
 
 - No commented-out code
 - No TODO or FIXME comments — convert to tracked issues
-- All user-facing strings use `__()` or `_e()` with text domain `blacklineguardianfund-theme`
+- All user-facing strings use `__()` or `_e()` with text domain example: `mbn-theme` follow the theme repository name
 - Enqueue scripts via `wp_enqueue_scripts` — no inline `<script>` tags
 
-## Carbon block (Gutenberg)
+## Gutenberg block render.php
 
-Add `blocks/class-{name}.php` with `namespace CustomTheme\Blocks`, a `final` class extending `Abstract_Block`, and `register()` that defines the block with `Container::make( 'block', … )`, `Field::make( … )`, and `set_render_callback( array( self::class, 'render' ) )`. Add matching markup in `blocks-render/render-{name}.php`; in `render( $fields )`, map fields to args and load it with `get_template_part( 'blocks-render/render-{name}', null, $args )`. `carbon-loader.php` registers new block files automatically (no `functions.php` edit); run `composer dump-autoload` if other code references the class by name. Use the text domain `blacklineguardianfund-theme` for all user-facing strings.
-
-## Carbon container (admin / meta / options)
-
-Add `containers/class-{name}.php` with `namespace CustomTheme\Containers`, a `final` class extending `Abstract_Container`, and `register()` using `Container::make()` for the container type you need (`theme_options`, `post_meta`, etc.) plus `Field::make()` for each field. Discovery and registration work the same as blocks—no `functions.php` edit; run `composer dump-autoload` if other code references the new class. Use the text domain `blacklineguardianfund-theme` for all user-facing strings.
-
-## Lint
-
-```bash
-composer run lint        # check
-composer run lint:fix    # auto-fix
-composer run lint:run    # security scan, fix twice, then check
-```
-
-## Commit Messages
-
-- First line: concise summary in **imperative mood**, max 72 characters.
-- Blank line, then body (if needed): explain the "why", not the "what". Wrap at 72 characters.
-- No attribution to individual tools or services.
-
-## Pull Requests
-
-Every PR must include three sections:
-
-### Summary
-
-1-3 bullet points explaining what the PR does and why.
-
-### Changes
-
-List specific files or areas changed, grouped logically.
-
-### Test Plan
-
-Checklist of steps to verify the changes work correctly.
-
-**Guidelines:**
-
-- Keep it concise — reviewers should understand the PR in under 30 seconds.
-- Reference related issue numbers when available.
-
-## Versioning
-
-Before tagging a release, update the `Version` header in `style.css` to match the release tag (without the `v` prefix):
-
-```
-Version: 1.2.0
-```
-
-The tag name (`v1.2.0`) and the header value (`1.2.0`) must match — the Plugin Update Checker uses this header to detect available updates.
-
-## Release
-
-Use this checklist for every release:
-
-1. Pull the latest `main`.
-2. Update `Version` in `style.css` to the target version.
-3. Run:
-
-```bash
-composer run lint:run
-```
-
-4. Commit:
-
-```bash
-git add style.css
-git commit -m "Release vX.Y.Z"
-```
-
-5. Create and push tag:
-
-```bash
-git tag vX.Y.Z
-git push origin main
-git push origin vX.Y.Z
-```
-
-6. Create a GitHub Release from `vX.Y.Z` and publish release notes.
-
-## Release Notes
-
-When tagging a release (`vX.X.X`), group changes under:
-
-- **Features**
-- **Bug Fixes**
-- **Performance**
-- **Breaking Changes** (if any)
-- **Full Changelog**
-
-Base the notes on commit messages since the last tag. Keep entries concise and professional. No attribution to individual tools or services - notes represent the team.
+- Implement block HTML directly in each `blocks/{name}/render.php` using `ob_start()` and template markup
+- Do not build HTML with string concatenation
+- The only shared render helper allowed is `mbn_theme_render_layout_shell()` for margin, padding, background, overlay, and custom CSS wrapper output
+- Child-only blocks (for example `mbn-column`) may render their own markup directly without the layout shell
+- Use Tailwind utility classes; add `style.css` only when utilities are not sufficient
+- Escape all output; use `get_block_wrapper_attributes()` on the outer wrapper
