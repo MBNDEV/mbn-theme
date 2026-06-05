@@ -30,6 +30,7 @@ Use this command when you need to scaffold a new native Gutenberg block in `bloc
 - Observe mobile-first responsive, web accessibility and performance.
 - Keep editor and front-end structure consistent.
 - Use `get_block_wrapper_attributes()` in the render template.
+- blocks design from edit js and output should 100% the same looking and building.
 
 ## Safety and output rules
 

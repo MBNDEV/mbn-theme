@@ -7,16 +7,27 @@
 import { useEffect } from '@wordpress/element';
 import { useBlockProps, useInnerBlocksProps, InnerBlocks } from '@wordpress/block-editor';
 import LayoutControls from './LayoutControls';
-import { getBlockElementId, getLayoutStyles } from './use-layout-styles';
+import {
+	getBlockElementId,
+	getLayoutStyles,
+	getScopedCustomCss,
+	LAYOUT_WRAPPER_CLASSES,
+	LAYOUT_VIDEO_CLASSES,
+	LAYOUT_IMAGE_CLASSES,
+	LAYOUT_OVERLAY_CLASSES,
+} from './use-layout-styles';
 
 /**
- * @param {Object}   props
- * @param {Object}   props.attributes
- * @param {Function} props.setAttributes
- * @param {string}   props.clientId
- * @param {string}   props.blockSlug
- * @param {string}   props.wrapperClassName
- * @param {string}   props.contentClassName
+ * @param {Object}        props
+ * @param {Object}        props.attributes
+ * @param {Function}      props.setAttributes
+ * @param {string}        props.clientId
+ * @param {string}        props.blockSlug
+ * @param {string}        props.wrapperClassName
+ * @param {string}        props.contentClassName
+ * @param {string}        props.innerBlocksClassName Optional nested inner-blocks class.
+ * @param {Object}        props.innerBlocksOptions   Optional inner blocks config overrides.
+ * @param {JSX.Element}   props.innerContent         Optional custom content instead of inner blocks.
  * @return {JSX.Element} Layout shell editor.
  */
 export default function LayoutShellEdit( {
@@ -24,8 +35,11 @@ export default function LayoutShellEdit( {
 	setAttributes,
 	clientId,
 	blockSlug,
-	wrapperClassName,
+	wrapperClassName = LAYOUT_WRAPPER_CLASSES,
 	contentClassName,
+	innerBlocksClassName = '',
+	innerBlocksOptions = {},
+	innerContent = null,
 } ) {
 	const {
 		backgroundImageUrl,
@@ -37,6 +51,9 @@ export default function LayoutShellEdit( {
 
 	const elementId = getBlockElementId( attributes, blockSlug );
 	const layout = getLayoutStyles( attributes );
+	const scopedCss = getScopedCustomCss( elementId, customCss );
+	const hasNestedInnerBlocks = Boolean( innerBlocksClassName );
+	const usesInnerBlocks = innerContent === null;
 
 	useEffect( () => {
 		if ( ! attributes.blockInstanceId ) {
@@ -54,29 +71,46 @@ export default function LayoutShellEdit( {
 
 	const innerBlocksProps = useInnerBlocksProps(
 		{
-			className: contentClassName,
+			className: hasNestedInnerBlocks ? innerBlocksClassName : contentClassName,
 		},
 		{
 			renderAppender: InnerBlocks.ButtonBlockAppender,
+			...innerBlocksOptions,
 		}
 	);
 
 	const hasOverlay = overlayOpacity > 0 && overlayColor;
 
+	const renderContentArea = () => {
+		if ( innerContent ) {
+			return <div className={ contentClassName }>{ innerContent }</div>;
+		}
+
+		if ( hasNestedInnerBlocks ) {
+			return (
+				<div className={ contentClassName }>
+					<div { ...innerBlocksProps } />
+				</div>
+			);
+		}
+
+		if ( usesInnerBlocks ) {
+			return <div { ...innerBlocksProps } />;
+		}
+
+		return <div className={ contentClassName } />;
+	};
+
 	return (
 		<>
 			<LayoutControls attributes={ attributes } setAttributes={ setAttributes } />
 
-			{ customCss && (
-				<style>
-					{ `#${ elementId }{${ customCss }}` }
-				</style>
-			) }
+			{ scopedCss && <style>{ scopedCss }</style> }
 
 			<div { ...blockProps }>
 				{ backgroundVideoUrl && (
 					<video
-						className="mbn-layout__video pointer-events-none absolute inset-0 z-0 h-full w-full object-cover"
+						className={ LAYOUT_VIDEO_CLASSES }
 						autoPlay
 						muted
 						loop
@@ -89,7 +123,7 @@ export default function LayoutShellEdit( {
 
 				{ backgroundImageUrl && ! backgroundVideoUrl && (
 					<div
-						className="mbn-layout__image absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+						className={ LAYOUT_IMAGE_CLASSES }
 						style={ { backgroundImage: `url(${ backgroundImageUrl })` } }
 						aria-hidden="true"
 					/>
@@ -97,7 +131,7 @@ export default function LayoutShellEdit( {
 
 				{ hasOverlay && (
 					<div
-						className="mbn-layout__overlay absolute inset-0 z-[1]"
+						className={ LAYOUT_OVERLAY_CLASSES }
 						style={ {
 							backgroundColor: overlayColor,
 							opacity: overlayOpacity / 100,
@@ -106,7 +140,7 @@ export default function LayoutShellEdit( {
 					/>
 				) }
 
-				<div { ...innerBlocksProps } />
+				{ renderContentArea() }
 			</div>
 		</>
 	);

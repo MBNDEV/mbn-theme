@@ -6,7 +6,7 @@
 
 import { useEffect } from '@wordpress/element';
 import LayoutShellEdit from '../shared/LayoutShellEdit';
-import { CONTAINER_CONTENT_CLASSES } from '../shared/use-layout-styles';
+import { CONTAINER_CONTENT_CLASSES, LAYOUT_WRAPPER_CLASSES } from '../shared/use-layout-styles';
 
 /**
  * @param {Object} props Block editor props.
@@ -25,7 +25,7 @@ export default function Edit( { attributes, setAttributes, ...props } ) {
 			attributes={ attributes }
 			setAttributes={ setAttributes }
 			blockSlug="mbn-container"
-			wrapperClassName="relative isolate min-h-px w-full overflow-hidden"
+			wrapperClassName={ LAYOUT_WRAPPER_CLASSES }
 			contentClassName={ CONTAINER_CONTENT_CLASSES }
 		/>
 	);

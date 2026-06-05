@@ -5,7 +5,7 @@
  */
 
 import LayoutShellEdit from '../shared/LayoutShellEdit';
-import { CENTERED_CONTENT_CLASSES } from '../shared/use-layout-styles';
+import { CENTERED_CONTENT_CLASSES, LAYOUT_WRAPPER_CLASSES } from '../shared/use-layout-styles';
 
 /**
  * @param {Object} props Block editor props.
@@ -16,7 +16,7 @@ export default function Edit( props ) {
 		<LayoutShellEdit
 			{ ...props }
 			blockSlug="mbn-section"
-			wrapperClassName="relative isolate min-h-px w-full overflow-hidden"
+			wrapperClassName={ LAYOUT_WRAPPER_CLASSES }
 			contentClassName={ CENTERED_CONTENT_CLASSES }
 		/>
 	);

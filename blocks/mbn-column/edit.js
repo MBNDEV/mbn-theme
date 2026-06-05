@@ -5,18 +5,19 @@
  */
 
 import { useBlockProps, useInnerBlocksProps, InnerBlocks } from '@wordpress/block-editor';
+import { COLUMN_CONTENT_CLASSES, COLUMN_WRAPPER_CLASSES } from '../shared/use-layout-styles';
 
 /**
  * @return {JSX.Element} MBN Column block editor.
  */
 export default function Edit() {
 	const blockProps = useBlockProps( {
-		className: 'box-border min-w-0 w-full rounded-sm border border-dashed border-gray-300 p-4',
+		className: COLUMN_WRAPPER_CLASSES,
 	} );
 
 	const innerBlocksProps = useInnerBlocksProps(
 		{
-			className: 'mbn-column__content',
+			className: COLUMN_CONTENT_CLASSES,
 		},
 		{
 			renderAppender: InnerBlocks.ButtonBlockAppender,
