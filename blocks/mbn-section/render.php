@@ -14,5 +14,5 @@ mbn_theme_render_layout_shell(
   $content,
   'mbn-section',
   'relative isolate min-h-px w-full overflow-hidden',
-  mbn_theme_get_centered_content_classes()
+  'relative z-10 mx-auto w-full px-4 sm:px-6 lg:px-8'
 );

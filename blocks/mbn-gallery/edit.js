@@ -9,10 +9,31 @@ import { InspectorControls, MediaUpload } from '@wordpress/block-editor';
 import { PanelBody, RangeControl, Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import LayoutShellEdit from '../shared/LayoutShellEdit';
-import { FULL_WIDTH_CONTENT_CLASSES } from '../shared/use-layout-styles';
-import { getColumnGridClasses } from '../shared/column-helpers';
 
 const BLOCK_SLUG = 'mbn-gallery';
+
+/**
+ * @param {number} columnCount Number of columns (1-6).
+ * @return {string} Grid classes — keep in sync with render.php.
+ */
+function getGridClasses( columnCount ) {
+	const count = Math.max( 1, Math.min( 6, Number( columnCount ) || 1 ) );
+
+	switch ( count ) {
+		case 2:
+			return 'grid w-full grid-cols-1 items-stretch gap-6 sm:grid-cols-2';
+		case 3:
+			return 'grid w-full grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3';
+		case 4:
+			return 'grid w-full grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-4';
+		case 5:
+			return 'grid w-full grid-cols-1 items-stretch gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5';
+		case 6:
+			return 'grid w-full grid-cols-1 items-stretch gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6';
+		default:
+			return 'grid w-full grid-cols-1 items-stretch gap-6';
+	}
+}
 
 /**
  * Normalize media items from the media library into gallery attributes.
@@ -40,7 +61,7 @@ function normalizeGalleryImages( media ) {
  */
 export default function Edit( { attributes, setAttributes, clientId, ...props } ) {
 	const { images = [], columnCount } = attributes;
-	const gridClasses = getColumnGridClasses( columnCount );
+	const gridClasses = getGridClasses( columnCount );
 
 	const removeImage = useCallback(
 		( index ) => {
@@ -136,7 +157,8 @@ export default function Edit( { attributes, setAttributes, clientId, ...props } 
 				setAttributes={ setAttributes }
 				clientId={ clientId }
 				blockSlug={ BLOCK_SLUG }
-				contentClassName={ FULL_WIDTH_CONTENT_CLASSES }
+				wrapperClassName="relative isolate min-h-px w-full overflow-hidden"
+				contentClassName="relative z-10 w-full px-4 sm:px-6 lg:px-8"
 				innerContent={ galleryContent }
 			/>
 		</>

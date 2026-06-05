@@ -11,11 +11,7 @@ import {
 	getBlockElementId,
 	getLayoutStyles,
 	getScopedCustomCss,
-	LAYOUT_WRAPPER_CLASSES,
-	LAYOUT_VIDEO_CLASSES,
-	LAYOUT_IMAGE_CLASSES,
-	LAYOUT_OVERLAY_CLASSES,
-} from './use-layout-styles';
+} from './layout-helpers';
 
 /**
  * @param {Object}        props
@@ -35,7 +31,7 @@ export default function LayoutShellEdit( {
 	setAttributes,
 	clientId,
 	blockSlug,
-	wrapperClassName = LAYOUT_WRAPPER_CLASSES,
+	wrapperClassName,
 	contentClassName,
 	innerBlocksClassName = '',
 	innerBlocksOptions = {},
@@ -110,7 +106,7 @@ export default function LayoutShellEdit( {
 			<div { ...blockProps }>
 				{ backgroundVideoUrl && (
 					<video
-						className={ LAYOUT_VIDEO_CLASSES }
+						className="mbn-layout__video pointer-events-none absolute inset-0 z-0 h-full w-full object-cover"
 						autoPlay
 						muted
 						loop
@@ -123,7 +119,7 @@ export default function LayoutShellEdit( {
 
 				{ backgroundImageUrl && ! backgroundVideoUrl && (
 					<div
-						className={ LAYOUT_IMAGE_CLASSES }
+						className="mbn-layout__image absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
 						style={ { backgroundImage: `url(${ backgroundImageUrl })` } }
 						aria-hidden="true"
 					/>
@@ -131,7 +127,7 @@ export default function LayoutShellEdit( {
 
 				{ hasOverlay && (
 					<div
-						className={ LAYOUT_OVERLAY_CLASSES }
+						className="mbn-layout__overlay absolute inset-0 z-[1]"
 						style={ {
 							backgroundColor: overlayColor,
 							opacity: overlayOpacity / 100,

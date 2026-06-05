@@ -11,11 +11,32 @@ import { InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, RangeControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import LayoutShellEdit from '../shared/LayoutShellEdit';
-import { FULL_WIDTH_CONTENT_CLASSES } from '../shared/use-layout-styles';
-import { getColumnGridClasses } from '../shared/column-helpers';
 
 const BLOCK_SLUG = 'mbn-columns';
 const COLUMN_BLOCK = 'mbn-theme/mbn-column';
+
+/**
+ * @param {number} columnCount Number of columns (1-6).
+ * @return {string} Grid classes — keep in sync with render.php.
+ */
+function getGridClasses( columnCount ) {
+	const count = Math.max( 1, Math.min( 6, Number( columnCount ) || 1 ) );
+
+	switch ( count ) {
+		case 2:
+			return 'grid w-full grid-cols-1 items-stretch gap-6 sm:grid-cols-2';
+		case 3:
+			return 'grid w-full grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3';
+		case 4:
+			return 'grid w-full grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-4';
+		case 5:
+			return 'grid w-full grid-cols-1 items-stretch gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5';
+		case 6:
+			return 'grid w-full grid-cols-1 items-stretch gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6';
+		default:
+			return 'grid w-full grid-cols-1 items-stretch gap-6';
+	}
+}
 
 /**
  * @param {Object}   props
@@ -26,7 +47,7 @@ const COLUMN_BLOCK = 'mbn-theme/mbn-column';
  */
 export default function Edit( { attributes, setAttributes, clientId, ...props } ) {
 	const { columnCount } = attributes;
-	const gridClasses = getColumnGridClasses( columnCount );
+	const gridClasses = getGridClasses( columnCount );
 
 	const innerBlocks = useSelect(
 		( select ) => select( 'core/block-editor' ).getBlocks( clientId ),
@@ -91,7 +112,8 @@ export default function Edit( { attributes, setAttributes, clientId, ...props } 
 				setAttributes={ setAttributes }
 				clientId={ clientId }
 				blockSlug={ BLOCK_SLUG }
-				contentClassName={ FULL_WIDTH_CONTENT_CLASSES }
+				wrapperClassName="relative isolate min-h-px w-full overflow-hidden"
+				contentClassName="relative z-10 w-full px-4 sm:px-6 lg:px-8"
 				innerBlocksClassName={ gridClasses }
 				innerBlocksOptions={ {
 					allowedBlocks: [ COLUMN_BLOCK ],

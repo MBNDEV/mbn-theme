@@ -43,5 +43,8 @@ alwaysApply: true
 - Do not build HTML with string concatenation
 - The only shared render helper allowed is `mbn_theme_render_layout_shell()` for margin, padding, background, overlay, and custom CSS wrapper output
 - Child-only blocks (for example `mbn-column`) may render their own markup directly without the layout shell
+- Put Tailwind classes directly in `render.php` and the matching `edit.js`; keep class strings identical for easier debugging
+- Editor and front-end output must look 100% the same while building and on the published page
 - Use Tailwind utility classes; add `style.css` only when utilities are not sufficient
 - Escape all output; use `get_block_wrapper_attributes()` on the outer wrapper
+- Run `npm run build:blocks` after `render.php` changes so `build/blocks/` matches source

@@ -30,7 +30,9 @@ Use this command when you need to scaffold a new native Gutenberg block in `bloc
 - Observe mobile-first responsive, web accessibility and performance.
 - Keep editor and front-end structure consistent.
 - Use `get_block_wrapper_attributes()` in the render template.
-- blocks design from edit js and output should 100% the same looking and building.
+- Editor (`edit.js`) and output (`render.php`) must look 100% the same while building and on the published page.
+- Put Tailwind classes directly in both `edit.js` and `render.php` with identical strings — do not use shared constants for single-block markup.
+- Run `npm run build:blocks` after `render.php` changes (WordPress loads from `build/blocks/`).
 
 ## Safety and output rules
 

@@ -11,16 +11,14 @@
 
 $wrapper_attrs = get_block_wrapper_attributes(
   array(
-	  'class' => 'mbn-column min-h-px min-w-0',
+	  'class' => 'mbn-column w-full',
   )
 );
 
 ob_start();
 ?>
 <div <?php echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<div class="mbn-column__content flex flex-col gap-4">
-		<?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-	</div>
+	<?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 </div>
 <?php
 echo ob_get_clean(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

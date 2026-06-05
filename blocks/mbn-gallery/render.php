@@ -10,8 +10,29 @@
  */
 
 $column_count = isset( $attributes['columnCount'] ) ? absint( $attributes['columnCount'] ) : 3;
+$column_count = max( 1, min( 6, $column_count ) );
 $images       = isset( $attributes['images'] ) && is_array( $attributes['images'] ) ? $attributes['images'] : array();
-$grid_classes = mbn_theme_get_columns_grid_classes( $column_count );
+
+// Keep grid classes in sync with edit.js.
+switch ( $column_count ) {
+  case 2:
+    $grid_classes = 'grid w-full grid-cols-1 items-stretch gap-6 sm:grid-cols-2';
+      break;
+  case 3:
+    $grid_classes = 'grid w-full grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3';
+      break;
+  case 4:
+    $grid_classes = 'grid w-full grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-4';
+      break;
+  case 5:
+    $grid_classes = 'grid w-full grid-cols-1 items-stretch gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5';
+      break;
+  case 6:
+    $grid_classes = 'grid w-full grid-cols-1 items-stretch gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6';
+      break;
+  default:
+    $grid_classes = 'grid w-full grid-cols-1 items-stretch gap-6';
+}
 
 ob_start();
 
@@ -81,5 +102,5 @@ mbn_theme_render_layout_shell(
   $gallery_html,
   'mbn-gallery',
   'relative isolate min-h-px w-full overflow-hidden',
-  mbn_theme_get_full_width_content_classes()
+  'relative z-10 w-full px-4 sm:px-6 lg:px-8'
 );
