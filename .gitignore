@@ -1,9 +1,9 @@
 node_modules/
 .husky/
-.cursor/
 .vscode/
 build/
 *.hot-update.js
 *.hot-update.json
 .DS_Store
 html_tailwind/*
+plans

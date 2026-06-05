@@ -47,40 +47,6 @@ function blacklineguardianfund_register_blocks() {
 add_action( 'init', 'blacklineguardianfund_register_blocks' );
 
 /**
- * Show admin notice with registered blocks (for debugging).
- * Remove this after confirming blocks are working.
- */
-function blacklineguardianfund_show_blocks_notice() {
-  if ( ! current_user_can( 'manage_options' ) ) {
-      return;
-  }
-
-	$registered_blocks = \WP_Block_Type_Registry::get_instance()->get_all_registered();
-	$theme_blocks      = array_filter(
-      array_keys( $registered_blocks ),
-      function ( $block_name ) {
-		return strpos( $block_name, 'mbn-theme/' ) === 0;
-      }
-    );
-
-  if ( ! empty( $theme_blocks ) ) {
-      echo '<div class="notice notice-success is-dismissible">';
-      echo '<p><strong>Theme Blocks Registered:</strong> ' . count( $theme_blocks ) . '</p>';
-      echo '<ul>';
-    foreach ( $theme_blocks as $block_name ) {
-        echo '<li>' . esc_html( $block_name ) . '</li>';
-    }
-      echo '</ul>';
-      echo '</div>';
-  } else {
-      echo '<div class="notice notice-warning is-dismissible">';
-      echo '<p><strong>Warning:</strong> No theme blocks found. Check debug log.</p>';
-      echo '</div>';
-  }
-}
-add_action( 'admin_notices', 'blacklineguardianfund_show_blocks_notice' );
-
-/**
  * Register custom block category for theme blocks.
  *
  * @param array $categories Array of block categories.

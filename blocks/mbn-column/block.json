@@ -1,0 +1,18 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "mbn-theme/mbn-column",
+  "title": "MBN Column",
+  "category": "mbn-blocks",
+  "icon": "align-left",
+  "description": "A single column slot inside MBN Columns.",
+  "textdomain": "mbn-theme",
+  "parent": ["mbn-theme/mbn-columns"],
+  "supports": {
+    "html": false,
+    "reusable": false
+  },
+  "attributes": {},
+  "editorScript": "file:./index.js",
+  "render": "file:./render.php"
+}
