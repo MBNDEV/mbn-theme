@@ -1,0 +1,66 @@
+.wp-block-mbn-theme-icon-box {
+	display: block;
+}
+
+.wp-block-mbn-theme-icon-box .mbn-icon-box__content {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.wp-block-mbn-theme-icon-box .mbn-icon-box__content.has-align-left {
+	align-items: flex-start;
+	text-align: left;
+}
+
+.wp-block-mbn-theme-icon-box .mbn-icon-box__content.has-align-center {
+	align-items: center;
+	text-align: center;
+}
+
+.wp-block-mbn-theme-icon-box .mbn-icon-box__content.has-align-right {
+	align-items: flex-end;
+	text-align: right;
+}
+
+.wp-block-mbn-theme-icon-box .mbn-icon-box__icon img,
+.wp-block-mbn-theme-icon-box .mbn-icon-box__icon svg {
+	display: block;
+	max-width: 100%;
+	height: auto;
+}
+
+.wp-block-mbn-theme-icon-box .mbn-icon-box__title,
+.wp-block-mbn-theme-icon-box .mbn-icon-box__description {
+	margin: 0;
+}
+
+.wp-block-mbn-theme-icon-box .mbn-icon-box__button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	text-decoration: none;
+	border: 1px solid transparent;
+	padding: 10px 16px;
+	border-radius: 999px;
+	font-weight: 600;
+}
+
+.wp-block-mbn-theme-icon-box .mbn-icon-box__button.btn-primary {
+	background: #111827;
+	color: #fff;
+	border-color: #111827;
+}
+
+.wp-block-mbn-theme-icon-box .mbn-icon-box__button.btn-secondary {
+	background: #f3f4f6;
+	color: #111827;
+	border-color: #d1d5db;
+}
+
+.wp-block-mbn-theme-icon-box .mbn-icon-box__button.btn-outline {
+	background: transparent;
+	color: #111827;
+	border-color: #111827;
+}

@@ -1,0 +1,39 @@
+.wp-block-mbn-theme-mbn-faqs {
+	display: block;
+}
+
+.wp-block-mbn-theme-mbn-faqs .mbn-faqs__item {
+	border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.wp-block-mbn-theme-mbn-faqs .mbn-faqs__question {
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	list-style: none;
+	padding: 16px 0;
+	font-weight: 600;
+}
+
+.wp-block-mbn-theme-mbn-faqs .mbn-faqs__question::after {
+	content: '+';
+	flex-shrink: 0;
+	font-size: 1.25em;
+	line-height: 1;
+	transition: transform 0.2s ease;
+}
+
+.wp-block-mbn-theme-mbn-faqs .mbn-faqs__item.is-open .mbn-faqs__question::after {
+	transform: rotate(45deg);
+}
+
+.wp-block-mbn-theme-mbn-faqs .mbn-faqs__answer {
+	display: none;
+	padding-bottom: 16px;
+}
+
+.wp-block-mbn-theme-mbn-faqs .mbn-faqs__item.is-open .mbn-faqs__answer {
+	display: block;
+}

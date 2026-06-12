@@ -1,0 +1,89 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "mbn-theme/logo-list",
+  "title": "Logo List",
+  "category": "mbn-blocks",
+  "icon": "images-alt2",
+  "description": "Display logos as grid or slider with responsive controls",
+  "keywords": ["logo", "gallery", "slider", "carousel", "clients"],
+  "textdomain": "mbn-theme",
+  "editorScript": "file:./index.js",
+  "style": "file:./style.css",
+  "viewScript": "file:./view.js",
+  "supports": {
+    "align": ["wide", "full"],
+    "html": false,
+    "spacing": {
+      "margin": true,
+      "padding": true
+    }
+  },
+  "attributes": {
+    "logos": {
+      "type": "array",
+      "default": []
+    },
+    "displayType": {
+      "type": "string",
+      "default": "grid",
+      "enum": ["grid", "slider"]
+    },
+    "gridColumns": {
+      "type": "number",
+      "default": 4
+    },
+    "gridGap": {
+      "type": "string",
+      "default": "2rem"
+    },
+    "sliderAutoplay": {
+      "type": "boolean",
+      "default": true
+    },
+    "sliderAutoplaySpeed": {
+      "type": "number",
+      "default": 3000
+    },
+    "sliderSpeed": {
+      "type": "number",
+      "default": 500
+    },
+    "sliderInfinite": {
+      "type": "boolean",
+      "default": true
+    },
+    "sliderDots": {
+      "type": "boolean",
+      "default": false
+    },
+    "sliderArrows": {
+      "type": "boolean",
+      "default": true
+    },
+    "slidesDesktop": {
+      "type": "number",
+      "default": 5
+    },
+    "slidesTablet": {
+      "type": "number",
+      "default": 3
+    },
+    "slidesMobile": {
+      "type": "number",
+      "default": 2
+    },
+    "logoHeight": {
+      "type": "string",
+      "default": "80px"
+    },
+    "grayscale": {
+      "type": "boolean",
+      "default": false
+    },
+    "grayscaleHover": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

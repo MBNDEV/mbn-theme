@@ -1,0 +1,16 @@
+/* MBN FAQs – editor-only styles */
+
+.wp-block-mbn-theme-mbn-faqs {
+	outline: 2px dashed rgba(130, 130, 180, 0.45);
+	outline-offset: 3px;
+	min-height: 60px;
+}
+
+.wp-block-mbn-theme-mbn-faqs .mbn-faqs__item {
+	border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.wp-block-mbn-theme-mbn-faqs .mbn-faqs__answer {
+	display: block !important;
+	opacity: 0.7;
+}

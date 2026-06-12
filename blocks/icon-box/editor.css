@@ -1,0 +1,25 @@
+/* Icon Box – editor-only styles */
+
+/* Dotted outline so the block is easy to spot in the editor */
+.wp-block-mbn-theme-icon-box {
+	outline: 2px dashed rgba(130, 130, 180, 0.45);
+	outline-offset: 3px;
+	min-height: 60px;
+}
+
+/* Button preset previews in editor */
+.wp-block-mbn-theme-icon-box .mbn-icon-box__button.btn-primary {
+	background: #111827;
+	color: #fff;
+}
+
+.wp-block-mbn-theme-icon-box .mbn-icon-box__button.btn-secondary {
+	background: #f3f4f6;
+	color: #111827;
+}
+
+.wp-block-mbn-theme-icon-box .mbn-icon-box__button.btn-outline {
+	background: transparent;
+	color: #111827;
+	border: 1px solid #111827;
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "mbn-theme/slider-item",
+  "title": "Slider Item",
+  "category": "mbn-blocks",
+  "icon": "slides",
+  "description": "A single item container for MBN Slider",
+  "keywords": ["slider", "item", "container"],
+  "parent": ["mbn-theme/mbn-slider"],
+  "textdomain": "mbn-theme",
+  "editorScript": "file:./index.js",
+  "style": "file:./style.css",
+  "supports": {
+    "html": false,
+    "reusable": false
+  },
+  "attributes": {
+    "minHeight": {
+      "type": "string",
+      "default": ""
+    }
+  }
+}

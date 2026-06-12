@@ -1,0 +1,166 @@
+/**
+ * Logo List Block Styles
+ */
+
+.logo-list {
+  width: 100%;
+}
+
+.logo-list-controls {
+  margin-bottom: 1rem;
+}
+
+/* Grid Layout */
+.logo-grid {
+  display: grid;
+}
+
+.logo-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  position: relative;
+}
+
+.logo-list-item img {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+/* Grayscale Effects */
+.logo-list.grayscale .logo-list-item img {
+  filter: grayscale(100%);
+  opacity: 0.7;
+}
+
+.logo-list.grayscale.grayscale-hover .logo-list-item:hover img {
+  filter: grayscale(0%);
+  opacity: 1;
+}
+
+/* Slider Container */
+.logo-slider {
+  position: relative;
+}
+
+/* Slick Slider Overrides */
+.logo-slider.slick-slider {
+  margin-bottom: 0;
+}
+
+.logo-slider .slick-slide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: auto;
+}
+
+.logo-slider .slick-slide > div {
+  width: 100%;
+}
+
+/* Slick Arrows */
+.logo-slider .slick-prev,
+.logo-slider .slick-next {
+  width: 40px;
+  height: 40px;
+  z-index: 10;
+}
+
+.logo-slider .slick-prev {
+  left: -50px;
+}
+
+.logo-slider .slick-next {
+  right: -50px;
+}
+
+.logo-slider .slick-prev:before,
+.logo-slider .slick-next:before {
+  font-size: 40px;
+  opacity: 0.5;
+  color: #333;
+}
+
+.logo-slider .slick-prev:hover:before,
+.logo-slider .slick-next:hover:before {
+  opacity: 1;
+}
+
+/* Slick Dots */
+.logo-slider .slick-dots {
+  bottom: -40px;
+}
+
+.logo-slider .slick-dots li button:before {
+  font-size: 12px;
+  color: #333;
+}
+
+.logo-slider .slick-dots li.slick-active button:before {
+  color: #333;
+  opacity: 1;
+}
+
+/* Editor Specific Styles */
+.wp-block-mbn-theme-logo-list .logo-list-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.wp-block-mbn-theme-logo-list .logo-remove-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.wp-block-mbn-theme-logo-list .logo-list-item:hover .logo-remove-button {
+  opacity: 1;
+}
+
+.logo-list-placeholder {
+  padding: 3rem;
+  text-align: center;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  background: #f9f9f9;
+}
+
+.logo-list-placeholder p {
+  margin: 0;
+  color: #666;
+  font-size: 16px;
+}
+
+/* Responsive Grid Fallback (if not using slider) */
+@media (max-width: 1024px) {
+  .logo-grid:not(.logo-slider) {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .logo-grid:not(.logo-slider) {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important;
+  }
+
+  .logo-slider .slick-prev {
+    left: 10px;
+  }
+
+  .logo-slider .slick-next {
+    right: 10px;
+  }
+}
+
+/* Loading State */
+.logo-list-item img[src=""] {
+  min-height: 80px;
+  background: #f0f0f0;
+}

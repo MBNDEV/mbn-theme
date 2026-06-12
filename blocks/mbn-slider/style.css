@@ -1,0 +1,177 @@
+/**
+ * MBN Slider Block Styles
+ */
+
+.mbn-slider {
+  width: 100%;
+  position: relative;
+}
+
+/* Grid Layout */
+.mbn-slider .items-grid {
+  display: grid;
+}
+
+/* Slider Layout */
+.mbn-slider .items-slider {
+  position: relative;
+}
+
+/* Item Styles */
+.mbn-slider .slider-item,
+.mbn-slider .items-slider > *,
+.mbn-slider .items-grid > * {
+  width: 100%;
+  height: 100%;
+}
+
+/* Editor Styles */
+.wp-block-mbn-theme-mbn-slider .mbn-slider-items {
+  position: relative;
+  min-height: 200px;
+}
+
+/* Remove duplicate borders since slider-item has its own */
+.wp-block-mbn-theme-mbn-slider .items-grid > .wp-block-mbn-theme-slider-item {
+  /* Slider item block handles its own borders */
+}
+
+/* Slick Slider Overrides */
+.items-slider.slick-slider {
+  margin-bottom: 0;
+}
+
+.items-slider.slick-slider .slick-slide {
+  display: flex;
+  align-items: stretch;
+  height: auto;
+  padding: 0 10px;
+}
+
+.items-slider.slick-slider .slick-slide > div {
+  width: 100%;
+  height: 100%;
+  display: flex;
+}
+
+.items-slider.slick-slider .slick-slide > div > * {
+  width: 100%;
+  height: 100%;
+}
+
+.items-slider.slick-slider .slick-list {
+  margin: 0 -10px;
+}
+
+/* Slick Arrows */
+.items-slider .slick-prev,
+.items-slider .slick-next {
+  width: 50px;
+  height: 50px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+}
+
+.items-slider .slick-prev {
+  left: 20px;
+}
+
+.items-slider .slick-next {
+  right: 20px;
+}
+
+.items-slider .slick-prev:before,
+.items-slider .slick-next:before {
+  font-size: 30px;
+  opacity: 1;
+  color: #fff;
+}
+
+.items-slider .slick-prev:hover,
+.items-slider .slick-next:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* Slick Dots */
+.items-slider .slick-dots {
+  bottom: -50px;
+}
+
+.items-slider .slick-dots li {
+  margin: 0 5px;
+}
+
+.items-slider .slick-dots li button:before {
+  font-size: 14px;
+  color: #333;
+  opacity: 0.5;
+}
+
+.items-slider .slick-dots li.slick-active button:before {
+  color: #333;
+  opacity: 1;
+}
+
+/* Center Mode */
+.items-slider.slick-center .slick-slide {
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.items-slider.slick-center .slick-slide.slick-active {
+  opacity: 1;
+}
+
+/* Fade Effect */
+.items-slider.slick-slider.fade .slick-slide {
+  padding: 0;
+}
+
+.items-slider.slick-slider.fade .slick-list {
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .mbn-slider .items-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .mbn-slider .items-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+  }
+
+  .items-slider .slick-prev {
+    left: 10px;
+  }
+
+  .items-slider .slick-next {
+    right: 10px;
+  }
+
+  .items-slider .slick-prev,
+  .items-slider .slick-next {
+    width: 40px;
+    height: 40px;
+  }
+
+  .items-slider .slick-prev:before,
+  .items-slider .slick-next:before {
+    font-size: 24px;
+  }
+}
+
+/* Placeholder for empty block */
+.wp-block-mbn-theme-mbn-slider:empty::after {
+  content: 'Add items to your slider. Click the + button to add blocks.';
+  display: block;
+  padding: 3rem;
+  text-align: center;
+  color: #999;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  background: #f9f9f9;
+}

@@ -1,0 +1,85 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "mbn-theme/mbn-slider",
+  "title": "MBN Slider",
+  "category": "mbn-blocks",
+  "icon": "slides",
+  "description": "Add items with any blocks inside, display as slider or grid",
+  "keywords": ["slider", "carousel", "grid", "container", "wrapper"],
+  "textdomain": "mbn-theme",
+  "editorScript": "file:./index.js",
+  "style": "file:./style.css",
+  "viewScript": "file:./view.js",
+  "supports": {
+    "align": ["wide", "full"],
+    "html": false,
+    "spacing": {
+      "margin": true,
+      "padding": true
+    }
+  },
+  "attributes": {
+    "displayType": {
+      "type": "string",
+      "default": "slider",
+      "enum": ["slider", "grid"]
+    },
+    "gridColumns": {
+      "type": "number",
+      "default": 3
+    },
+    "gridGap": {
+      "type": "string",
+      "default": "2rem"
+    },
+    "sliderAutoplay": {
+      "type": "boolean",
+      "default": true
+    },
+    "sliderAutoplaySpeed": {
+      "type": "number",
+      "default": 3000
+    },
+    "sliderSpeed": {
+      "type": "number",
+      "default": 500
+    },
+    "sliderInfinite": {
+      "type": "boolean",
+      "default": true
+    },
+    "sliderDots": {
+      "type": "boolean",
+      "default": true
+    },
+    "sliderArrows": {
+      "type": "boolean",
+      "default": true
+    },
+    "sliderFade": {
+      "type": "boolean",
+      "default": false
+    },
+    "sliderCenterMode": {
+      "type": "boolean",
+      "default": false
+    },
+    "slidesDesktop": {
+      "type": "number",
+      "default": 3
+    },
+    "slidesTablet": {
+      "type": "number",
+      "default": 2
+    },
+    "slidesMobile": {
+      "type": "number",
+      "default": 1
+    },
+    "itemMinHeight": {
+      "type": "string",
+      "default": ""
+    }
+  }
+}

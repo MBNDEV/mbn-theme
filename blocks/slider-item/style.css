@@ -1,0 +1,59 @@
+/**
+ * Slider Item Block Styles
+ */
+
+/* Frontend Styles */
+.slider-item {
+  width: 100%;
+  height: 100%;
+  display: block;
+  box-sizing: border-box;
+}
+
+.slider-item-content {
+  width: 100%;
+  height: 100%;
+}
+
+.slider-item-content > * {
+  margin: 0;
+}
+
+.slider-item-content > * + * {
+  margin-top: 1rem;
+}
+
+/* Editor-Only Styles - Scoped to editor context */
+.editor-styles-wrapper .wp-block-mbn-theme-slider-item,
+.block-editor-block-list__layout .wp-block-mbn-theme-slider-item {
+  border: 1px dashed #ccc;
+  padding: 1rem;
+  min-height: 100px;
+  position: relative;
+}
+
+.editor-styles-wrapper .wp-block-mbn-theme-slider-item::before,
+.block-editor-block-list__layout .wp-block-mbn-theme-slider-item::before {
+  content: 'Slider Item';
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  font-size: 10px;
+  color: #999;
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.editor-styles-wrapper .wp-block-mbn-theme-slider-item:hover,
+.block-editor-block-list__layout .wp-block-mbn-theme-slider-item:hover {
+  border-color: #999;
+}
+
+.editor-styles-wrapper .wp-block-mbn-theme-slider-item.is-selected,
+.block-editor-block-list__layout .wp-block-mbn-theme-slider-item.is-selected {
+  border-color: #2271b1;
+  border-style: solid;
+}
