@@ -3,7 +3,7 @@
  * Native WordPress Theme Options (replaces Carbon Fields PresetOptionsContainer).
  * Appearance > Theme Options
  *
- * @package BlackLineGuardianFund
+ * @package CustomTheme
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -88,7 +88,7 @@ function blgf_render_theme_options_page() {
 								</option>
 							<?php endforeach; ?>
 						</select>
-						<p class="description"><?php esc_html_e( 'Applied to heading tags (h1–h6).', 'mbn-theme' ); ?></p>
+						<p class="description"><?php esc_html_e( 'Applied to heading tags (h1â€“h6).', 'mbn-theme' ); ?></p>
 					</td>
 				</tr>
 				<tr>

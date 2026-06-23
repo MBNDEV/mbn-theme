@@ -15,28 +15,28 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Register custom block pattern category.
  */
-function blacklineguardianfund_register_pattern_category() {
+function custom_theme_register_pattern_category() {
 	register_block_pattern_category(
-      'blacklineguardianfund',
+      'custom_theme',
       array(
-		  'label' => __( 'Blackline Guardian Fund', 'mbn-theme' ),
+		  'label' => __( 'DA Motorsports', 'mbn-theme' ),
 	  )
 	);
 }
-add_action( 'init', 'blacklineguardianfund_register_pattern_category' );
+add_action( 'init', 'custom_theme_register_pattern_category' );
 
 /**
  * Register block patterns.
  */
-function blacklineguardianfund_register_block_patterns() {
+function custom_theme_register_block_patterns() {
 
 	// Hero + Content Pattern.
 	register_block_pattern(
-      'blacklineguardianfund/hero-with-content',
+      'custom_theme/hero-with-content',
       array(
 		  'title'       => __( 'Hero Section with Content', 'mbn-theme' ),
 		  'description' => __( 'Full-width hero section with background image and text content below', 'mbn-theme' ),
-		  'categories'  => array( 'blacklineguardianfund' ),
+		  'categories'  => array( 'custom_theme' ),
 		  'content'     => '<!-- wp:mbn-theme/hero-section {"align":"full"} /-->
 
 <!-- wp:group {"layout":{"type":"constrained"}} -->
@@ -55,11 +55,11 @@ function blacklineguardianfund_register_block_patterns() {
 
 	// Two Column Layout Pattern.
 	register_block_pattern(
-      'blacklineguardianfund/two-column-content',
+      'custom_theme/two-column-content',
       array(
 		  'title'       => __( 'Two Column Content', 'mbn-theme' ),
 		  'description' => __( 'Two column layout with heading and text', 'mbn-theme' ),
-		  'categories'  => array( 'blacklineguardianfund' ),
+		  'categories'  => array( 'custom_theme' ),
 		  'content'     => '<!-- wp:columns -->
 <div class="wp-block-columns">
 	<!-- wp:column -->
@@ -92,11 +92,11 @@ function blacklineguardianfund_register_block_patterns() {
 
 	// Full Page Home Template Pattern
 	register_block_pattern(
-      'blacklineguardianfund/home-page-template',
+      'custom_theme/home-page-template',
       array(
 		  'title'       => __( 'Complete Home Page', 'mbn-theme' ),
 		  'description' => __( 'Full home page layout with hero, content sections, and CTA', 'mbn-theme' ),
-		  'categories'  => array( 'blacklineguardianfund' ),
+		  'categories'  => array( 'custom_theme' ),
 		  'blockTypes'  => array( 'core/post-content' ),
 		  'content'     => '<!-- wp:mbn-theme/hero-section {"align":"full","heading":"BUILT TO PROTECT THOSE AT RISK","description":"We help at-risk people and institutions access protection, training, and readiness support."} /-->
 
@@ -152,4 +152,4 @@ function blacklineguardianfund_register_block_patterns() {
 	  )
 	);
 }
-add_action( 'init', 'blacklineguardianfund_register_block_patterns' );
+add_action( 'init', 'custom_theme_register_block_patterns' );
