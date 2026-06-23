@@ -159,18 +159,18 @@ function custom_theme_get_sync_password() {
   }
 
 	$env_password = getenv( 'CUSTOM_THEME_SYNC_PASSWORD' );
-	if ( is_string( $env_password ) && '' !== $env_password ) {
-		return $env_password;
-	}
+  if ( is_string( $env_password ) && '' !== $env_password ) {
+      return $env_password;
+  }
 
 	$env_file_path = get_theme_file_path( '.env' );
-	if ( is_readable( $env_file_path ) ) {
-		$env_values = parse_ini_file( $env_file_path, false, INI_SCANNER_RAW );
+  if ( is_readable( $env_file_path ) ) {
+      $env_values = parse_ini_file( $env_file_path, false, INI_SCANNER_RAW );
 
-		if ( is_array( $env_values ) && isset( $env_values['CUSTOM_THEME_SYNC_PASSWORD'] ) && is_string( $env_values['CUSTOM_THEME_SYNC_PASSWORD'] ) ) {
-			return trim( $env_values['CUSTOM_THEME_SYNC_PASSWORD'], " \t\n\r\0\x0B\"'" );
-		}
-	}
+    if ( is_array( $env_values ) && isset( $env_values['CUSTOM_THEME_SYNC_PASSWORD'] ) && is_string( $env_values['CUSTOM_THEME_SYNC_PASSWORD'] ) ) {
+        return trim( $env_values['CUSTOM_THEME_SYNC_PASSWORD'], " \t\n\r\0\x0B\"'" );
+    }
+  }
 
 	return '';
 }
