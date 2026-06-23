@@ -70,37 +70,108 @@ function custom_theme_get_all_syncable_templates() {
 }
 
 /**
- * Import a single template by slug using its source file.
+ * Normalize template import mode to a supported value.
  *
- * @param string $slug Template slug.
- * @param array  $info Template info from custom_theme_get_all_syncable_templates().
- * @return bool True if imported, false if source file not found.
- * @throws Exception If database operation fails.
+ * @param string $mode Raw mode from request/UI.
+ * @return string One of: skip_existing, update_existing, create_copy.
  */
-function custom_theme_import_template_for_slug( $slug, $info ) {
-	$file_path = get_theme_file_path( $info['source_dir'] . '/' . $info['source_file'] . '.php' );
+function custom_theme_template_sync_normalize_import_mode( $mode ) {
+	$normalized = sanitize_key( (string) $mode );
+	$allowed    = array( 'skip_existing', 'update_existing', 'create_copy' );
 
-  if ( ! file_exists( $file_path ) ) {
-      return false;
+  if ( ! in_array( $normalized, $allowed, true ) ) {
+      return 'skip_existing';
   }
 
-	ob_start();
-	include $file_path; // phpcs:ignore WordPressVIPMinimum.Files.IncludingFile.UsingVariable
-	$content = trim( ob_get_clean() );
+	return $normalized;
+}
+
+/**
+ * Generate a unique template post slug for imported copies.
+ *
+ * @param string $base_slug Base template slug.
+ * @return string Unique post_name for mbn_block_template.
+ */
+function custom_theme_template_sync_generate_copy_slug( $base_slug ) {
+	$base_slug = sanitize_title( $base_slug );
+	$candidate = $base_slug . '-imported-copy';
+	$index     = 2;
+
+  while ( custom_theme_get_block_template_id_by_slug( $candidate ) > 0 ) {
+      $candidate = $base_slug . '-imported-copy-' . $index;
+      ++$index;
+  }
+
+	return $candidate;
+}
+
+/**
+ * Import a single template by slug using its source file.
+ *
+ * @param string $slug        Template slug.
+ * @param array  $info        Template info from custom_theme_get_all_syncable_templates().
+ * @param string $import_mode Import mode: skip_existing, update_existing, create_copy.
+ * @return string One of: created, updated, skipped, copied, missing_file.
+ * @throws Exception If database operation fails.
+ */
+function custom_theme_import_template_for_slug( $slug, $info, $import_mode = 'skip_existing' ) {
+	$file_path   = get_theme_file_path( $info['source_dir'] . '/' . $info['source_file'] . '.php' );
+	$import_mode = custom_theme_template_sync_normalize_import_mode( $import_mode );
+
+  if ( ! file_exists( $file_path ) ) {
+			return 'missing_file';
+  }
+
+	// Read raw file and strip the PHP preamble (ABSPATH guard + docblock) to extract
+	// only the block markup. Using file_get_contents avoids executing potentially
+	// broken PHP and prevents Fatal Errors from crashing the Sync admin page.
+	$_raw    = file_get_contents( $file_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+	$content = ( false !== $_raw ) ? trim( (string) preg_replace( '/^.*?\?>\s*/s', '', $_raw ) ) : '';
+
+  if ( '' === $content ) {
+			return 'missing_file';
+  }
 
 	$post_id = custom_theme_get_block_template_id_by_slug( $slug );
+	$exists  = $post_id > 0;
 
-  if ( 0 === $post_id ) {
-      $result = wp_insert_post(
-        array(
-			'post_type'    => 'mbn_block_template',
-			'post_title'   => $info['title'],
-			'post_name'    => $slug,
-			'post_status'  => 'publish',
-			'post_content' => $content,
-		),
-        true
-      );
+  if ( $exists && 'skip_existing' === $import_mode ) {
+          return 'skipped';
+  }
+
+  if ( $exists && 'create_copy' === $import_mode ) {
+          $copy_slug = custom_theme_template_sync_generate_copy_slug( $slug );
+          $result    = wp_insert_post(
+            array(
+				'post_type'    => 'mbn_block_template',
+				'post_title'   => sprintf( '%s (Imported Copy)', $info['title'] ),
+				'post_name'    => $copy_slug,
+				'post_status'  => 'publish',
+				'post_content' => $content,
+            ),
+            true
+          );
+
+    if ( is_wp_error( $result ) ) {
+          throw new Exception( esc_html( $result->get_error_message() ) );
+    }
+
+          return 'copied';
+  }
+
+  if ( ! $exists ) {
+    $result = wp_insert_post(
+      array(
+          'post_type'    => 'mbn_block_template',
+          'post_title'   => $info['title'],
+          'post_name'    => $slug,
+          'post_status'  => 'publish',
+          'post_content' => $content,
+      ),
+      true
+    );
+
+      $action = 'created';
   } else {
       $result = wp_update_post(
         array(
@@ -108,13 +179,15 @@ function custom_theme_import_template_for_slug( $slug, $info ) {
 			'post_content' => $content,
 		)
       );
+
+		$action = 'updated';
   }
 
   if ( is_wp_error( $result ) ) {
       throw new Exception( esc_html( $result->get_error_message() ) );
   }
 
-	return true;
+	return $action;
 }
 
 /**
@@ -130,12 +203,15 @@ function custom_theme_import_single_template_file( $slug ) {
       return false;
   }
 
-	// Extract rendered content using output buffering.
-	ob_start();
-	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_include
-	include $file_path;
-	$content = ob_get_clean();
-	$content = trim( $content );
+	// Read raw file and strip the PHP preamble (ABSPATH guard + docblock) to extract
+	// only the block markup. Using file_get_contents avoids executing potentially
+	// broken PHP and prevents Fatal Errors from crashing the Sync admin page.
+	$_raw    = file_get_contents( $file_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+	$content = ( false !== $_raw ) ? trim( (string) preg_replace( '/^.*?\?>\s*/s', '', $_raw ) ) : '';
+
+  if ( '' === $content ) {
+      return false;
+  }
 
 	// Get or create Block Template post
 	$post_id = custom_theme_get_block_template_id_by_slug( $slug );
@@ -177,37 +253,59 @@ function custom_theme_import_single_template_file( $slug ) {
 /**
  * Import templates from files. Optionally limit to a set of slugs.
  *
- * @param array $selected_slugs Slugs to import. Empty = import all.
+ * @param array  $selected_slugs Slugs to import. Empty = import all.
+ * @param string $import_mode    Import mode: skip_existing, update_existing, create_copy.
  * @throws Exception If no templates were imported and all failed.
  */
-function custom_theme_import_all_templates_from_files( $selected_slugs = array() ) {
-	$imported  = 0;
-	$errors    = array();
-	$templates = custom_theme_get_all_syncable_templates();
+function custom_theme_import_all_templates_from_files( $selected_slugs = array(), $import_mode = 'skip_existing' ) {
+	$counts      = array(
+		'created' => 0,
+		'updated' => 0,
+		'skipped' => 0,
+		'copied'  => 0,
+	);
+	$errors      = array();
+	$templates   = custom_theme_get_all_syncable_templates();
+	$import_mode = custom_theme_template_sync_normalize_import_mode( $import_mode );
 
-  if ( ! empty( $selected_slugs ) ) {
+    if ( ! empty( $selected_slugs ) ) {
       $templates = array_intersect_key( $templates, array_flip( $selected_slugs ) );
-  }
-
-  foreach ( $templates as $slug => $info ) {
-    try {
-      if ( custom_theme_import_template_for_slug( $slug, $info ) ) {
-        ++$imported;
-      }
-    } catch ( Exception $e ) {
-        $errors[] = sprintf( '%s: %s', esc_html( $info['title'] ), $e->getMessage() );
     }
-  }
 
-  if ( ! empty( $errors ) && 0 === $imported ) {
+    foreach ( $templates as $slug => $info ) {
+      try {
+			$action = custom_theme_import_template_for_slug( $slug, $info, $import_mode );
+
+        if ( isset( $counts[ $action ] ) ) {
+            ++$counts[ $action ];
+        }
+      } catch ( Exception $e ) {
+        $errors[] = sprintf( '%s: %s', esc_html( $info['title'] ), $e->getMessage() );
+      }
+    }
+
+	$successful_total = (int) $counts['created'] + (int) $counts['updated'] + (int) $counts['skipped'] + (int) $counts['copied'];
+
+	if ( ! empty( $errors ) && 0 === $successful_total ) {
       throw new Exception( implode( ' | ', array_map( 'esc_html', $errors ) ) );
-  }
+    }
 
 	$message = sprintf(
-		// translators: %d is the number of templates imported.
-      __( '%d template(s) imported successfully!', 'mbn-theme' ),
-      $imported
+		// translators: %1$d created, %2$d updated.
+      __( 'Import complete! Created: %1$d, Updated: %2$d', 'mbn-theme' ),
+      $counts['created'],
+      $counts['updated']
 	);
+
+  if ( $counts['copied'] > 0 ) {
+      // translators: %d is number of templates created as imported copies.
+          $message .= sprintf( ' | ' . __( 'Copied: %d', 'mbn-theme' ), (int) $counts['copied'] );
+  }
+
+  if ( $counts['skipped'] > 0 ) {
+      // translators: %d is number of existing templates skipped.
+          $message .= sprintf( ' | ' . __( 'Skipped existing: %d', 'mbn-theme' ), (int) $counts['skipped'] );
+  }
 
   if ( ! empty( $errors ) ) {
       $message .= ' ' . __( 'Warnings:', 'mbn-theme' ) . ' ' . implode( '; ', $errors );
@@ -224,7 +322,7 @@ function custom_theme_import_all_templates_from_files( $selected_slugs = array()
 /**
  * Handle sync actions.
  */
-function custom_theme_handle_template_sync_actions() {
+function custom_theme_handle_template_sync_actions() { // phpcs:ignore Generic.Metrics.CyclomaticComplexity.TooHigh
   if ( ! isset( $_POST['custom_theme_sync_action'] ) ) {
       return;
   }
@@ -251,8 +349,24 @@ function custom_theme_handle_template_sync_actions() {
   }
 
   if ( 'import_from_files' === $action ) {
+		$import_mode   = isset( $_POST['import_mode'] )
+			? custom_theme_template_sync_normalize_import_mode( sanitize_text_field( wp_unslash( $_POST['import_mode'] ) ) )
+			: 'skip_existing';
+		$sync_password = isset( $_POST['sync_password'] )
+			? (string) wp_unslash( $_POST['sync_password'] )
+			: '';
+
+    if ( ! custom_theme_verify_sync_password( $sync_password ) ) {
+        $message = '' === custom_theme_get_sync_password()
+            ? esc_html__( 'Import blocked: sync password is not configured. Define CUSTOM_THEME_SYNC_PASSWORD in wp-config.php or environment.', 'mbn-theme' )
+            : esc_html__( 'Import blocked: invalid sync password.', 'mbn-theme' );
+
+        add_settings_error( 'custom_theme_sync', 'invalid_sync_password', $message, 'error' );
+        return;
+    }
+
     try {
-        custom_theme_import_all_templates_from_files( $selected_slugs );
+				custom_theme_import_all_templates_from_files( $selected_slugs, $import_mode );
     } catch ( Exception $e ) {
         add_settings_error(
           'custom_theme_sync',
@@ -488,11 +602,34 @@ function custom_theme_render_import_card() {
   ?>
 	<div class="card" style="max-width: 800px;">
 		<h2>📥 Import Templates from Files</h2>
-		<p>Select templates to import from PHP files into the database. This will <strong>overwrite</strong> existing Block Template posts.</p>
+		<p>Select templates to import from source files into the database.</p>
 
 		<form method="post" style="margin-top: 20px;">
 			<?php wp_nonce_field( 'custom_theme_sync_templates', 'custom_theme_sync_nonce' ); ?>
 			<input type="hidden" name="custom_theme_sync_action" value="import_from_files">
+
+			<div style="background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:12px 14px;margin:0 0 15px 0;">
+				<label for="template-import-mode" style="display:block;font-weight:600;margin-bottom:6px;">
+					<?php esc_html_e( 'Import Mode', 'mbn-theme' ); ?>
+				</label>
+				<select id="template-import-mode" name="import_mode" style="min-width:280px;">
+					<option value="skip_existing" selected><?php esc_html_e( 'Skip existing templates (safe)', 'mbn-theme' ); ?></option>
+					<option value="update_existing"><?php esc_html_e( 'Update existing templates', 'mbn-theme' ); ?></option>
+					<option value="create_copy"><?php esc_html_e( 'Create imported copies for existing templates', 'mbn-theme' ); ?></option>
+				</select>
+				<p style="margin:6px 0 0;color:#646970;">
+					<?php esc_html_e( 'Choose how to handle template slugs that already exist in the database.', 'mbn-theme' ); ?>
+				</p>
+				<?php if ( custom_theme_is_sync_password_required() ) : ?>
+					<label for="template-sync-password" style="display:block;font-weight:600;margin:10px 0 6px;">
+						<?php esc_html_e( 'Sync Password', 'mbn-theme' ); ?>
+					</label>
+					<input type="password" id="template-sync-password" name="sync_password" autocomplete="current-password" style="min-width:280px;" required>
+					<p style="margin:6px 0 0;color:#646970;">
+						<?php esc_html_e( 'Required on production before import runs.', 'mbn-theme' ); ?>
+					</p>
+				<?php endif; ?>
+			</div>
 
 			<table class="widefat" style="margin-bottom: 15px;">
 				<thead>
@@ -563,7 +700,7 @@ function custom_theme_render_export_card() {
   ?>
 	<div class="card" style="max-width: 800px; margin-top: 20px;">
 		<h2>📤 Export Templates to Files</h2>
-		<p>Select templates to export from the database to PHP files for version control.</p>
+		<p>Select templates to export from the database to theme files.</p>
 
 		<form method="post" style="margin-top: 20px;">
 			<?php wp_nonce_field( 'custom_theme_sync_templates', 'custom_theme_sync_nonce' ); ?>
@@ -664,7 +801,7 @@ function custom_theme_render_workflow_card() {
 			<li>Edit a page in WordPress</li>
 			<li>Click the <strong>"+"</strong> button to add a block</li>
 			<li>Go to the <strong>"Patterns"</strong> tab</li>
-			<li>Select <strong>"Blackline Guardian Fund"</strong> category</li>
+			<li>Select <strong>"DA Motorsports"</strong> category</li>
 			<li>Insert your pattern (e.g., "Complete Home Page")</li>
 		</ol>
 	</div>
@@ -681,10 +818,8 @@ function custom_theme_render_template_tools_page() {
 		
 		<?php settings_errors( 'custom_theme_sync' ); ?>
 
-		<?php custom_theme_render_export_destinations_table(); ?>
 		<?php custom_theme_render_import_card(); ?>
 		<?php custom_theme_render_export_card(); ?>
-		<?php custom_theme_render_workflow_card(); ?>
 	</div>
 	<?php
 }

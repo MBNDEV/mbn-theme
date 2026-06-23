@@ -12,6 +12,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// Define filesystem permission constants if not already defined
+if ( ! defined( 'FS_CHMOD_DIR' ) ) {
+	define( 'FS_CHMOD_DIR', 0755 );
+}
+if ( ! defined( 'FS_CHMOD_FILE' ) ) {
+	define( 'FS_CHMOD_FILE', 0644 );
+}
+
 // Load configuration
 require_once get_theme_file_path( 'inc/includes-page-sync-config.php' );
 
@@ -53,11 +61,12 @@ function custom_theme_get_syncable_pages() {
  */
 function custom_theme_get_importable_page_files() {
 	$pattern_dir   = get_theme_file_path( 'template-parts/page-patterns' );
-	$pattern_files = is_dir( $pattern_dir ) ? glob( $pattern_dir . '/*.php' ) : array();
+	$pattern_files = is_dir( $pattern_dir ) ? glob( $pattern_dir . '/*.json' ) : array();
 	$files         = array();
 
   foreach ( (array) $pattern_files as $file ) {
-      $data = include $file; // phpcs:ignore WordPressVIPMinimum.Files.IncludingFile.UsingVariable
+      $raw  = file_get_contents( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+      $data = $raw ? json_decode( $raw, true ) : null;
     if ( ! is_array( $data ) || empty( $data['title'] ) || empty( $data['slug'] ) ) {
         continue;
     }
@@ -153,6 +162,8 @@ function custom_theme_decode_json_unicode_in_content( $content ) {
 	return str_replace( array_keys( $replacements ), array_values( $replacements ), $content );
 }
 
+// phpcs:disable Generic.Metrics.CyclomaticComplexity.MaxExceeded
+
 /**
  * Export a page's content to a pattern file.
  *
@@ -160,7 +171,7 @@ function custom_theme_decode_json_unicode_in_content( $content ) {
  * @return bool|string File path on success, false on failure.
  * @throws Exception If export fails.
  */
-function custom_theme_export_page_to_pattern( $page_id ) {
+function custom_theme_export_page_to_pattern( $page_id ) { // phpcs:ignore Generic.Metrics.CyclomaticComplexity.TooHigh
 	$page = get_post( $page_id );
 
   if ( ! $page instanceof \WP_Post ) {
@@ -215,46 +226,38 @@ function custom_theme_export_page_to_pattern( $page_id ) {
       throw new Exception( sprintf( 'Directory is not writable: %s. Check file permissions.', esc_html( $pattern_dir ) ) );
   }
 
-	$file_content  = "<?php\n";
-	$file_content .= "/**\n";
-	$file_content .= " * Page Pattern: {$title}\n";
-	$file_content .= " * \n";
-	$file_content .= " * This file contains the complete page data for the '{$title}' page.\n";
-	$file_content .= " * It can be imported to create/update the page on other environments.\n";
-	$file_content .= " * \n";
-	$file_content .= " * Includes: Content, Featured Image, Status, Attributes, Custom Fields\n";
-	$file_content .= " * \n";
-	$file_content .= " * To use: Tools → Page Content Sync → Import All Pages from Files\n";
-	$file_content .= " * \n";
-	$file_content .= " * @package CustomTheme\n";
-	$file_content .= " */\n\n";
-	$file_content .= "return array(\n";
-	$file_content .= "\t'title'              => " . wp_json_encode( $title ) . ",\n";
-	$file_content .= "\t'slug'               => " . wp_json_encode( $slug ) . ",\n";
-	$file_content .= "\t'status'             => " . wp_json_encode( $status ) . ",\n";
-	$file_content .= "\t'excerpt'            => " . wp_json_encode( $excerpt ) . ",\n";
-	$file_content .= "\t'parent_slug'        => " . wp_json_encode( $parent > 0 ? get_post_field( 'post_name', $parent ) : '' ) . ",\n";
-	$file_content .= "\t'menu_order'         => " . absint( $menu_order ) . ",\n";
-	$file_content .= "\t'template'           => " . wp_json_encode( $template ) . ",\n";
-	$file_content .= "\t'featured_image_url' => " . wp_json_encode( $featured_image_url ) . ",\n";
-	$file_content .= "\t'featured_image_path' => " . wp_json_encode( $featured_image_path ) . ", // Theme assets path (ships via Git)\n";
-	$file_content .= "\t'custom_fields'      => " . wp_json_encode( $custom_fields ) . ",\n";
-	$file_content .= "\t'content'            => <<<'EOD'\n";
-	$file_content .= $content . "\n";
-	$file_content .= "EOD\n";
-	$file_content .= ");\n";
+	$export_data = array(
+		'title'               => $title,
+		'slug'                => $slug,
+		'status'              => $status,
+		'excerpt'             => $excerpt,
+		'parent_slug'         => $parent > 0 ? get_post_field( 'post_name', $parent ) : '',
+		'menu_order'          => absint( $menu_order ),
+		'template'            => $template,
+		'featured_image_url'  => $featured_image_url,
+		'featured_image_path' => $featured_image_path,
+		'custom_fields'       => $custom_fields,
+		'content'             => $content,
+	);
 
-	$file_path = $pattern_dir . '/' . $slug . '.php';
+	$file_content = wp_json_encode( $export_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+
+	if ( false === $file_content ) {
+		throw new Exception( sprintf( 'Failed to encode page data for "%s" as JSON.', esc_html( $title ) ) );
+	}
+
+	$file_path = $pattern_dir . '/' . $slug . '.json';
 
 	// Write file using WP_Filesystem.
 	$written = $wp_filesystem->put_contents( $file_path, $file_content, FS_CHMOD_FILE );
 
-  if ( false === $written ) {
+    if ( false === $written ) {
       throw new Exception( sprintf( 'Failed to write file: %s. Check file permissions.', esc_html( $file_path ) ) );
-  }
+    }
 
 	return $file_path;
 }
+// phpcs:enable Generic.Metrics.CyclomaticComplexity.MaxExceeded
 
 /**
  * Import an external image into the media library.
@@ -454,16 +457,44 @@ function custom_theme_resolve_page_template_slug( $template ) {
 }
 
 /**
+ * Normalize the _wp_page_template meta value to a valid template slug string.
+ *
+ * @param mixed $meta_value Raw meta value.
+ * @return string Safe template slug.
+ */
+function custom_theme_sanitize_page_template_meta_value( $meta_value ) {
+  if ( is_array( $meta_value ) ) {
+      $meta_value = array_values(
+        array_filter(
+          $meta_value,
+          'is_string'
+        )
+      );
+      $meta_value = ! empty( $meta_value ) ? $meta_value[0] : '';
+  }
+
+  if ( ! is_string( $meta_value ) ) {
+      $meta_value = '';
+  }
+
+	$meta_value = trim( $meta_value );
+
+  if ( '' === $meta_value || 'default' === $meta_value ) {
+      return 'page-templates/template-blank.php';
+  }
+
+	return $meta_value;
+}
+
+/**
  * Ensure _wp_page_template in custom fields defaults to the blank template.
  *
  * @param array $custom_fields Custom fields array.
  * @return array Normalized custom fields.
  */
 function custom_theme_normalize_custom_fields_template( $custom_fields ) {
-	$meta = isset( $custom_fields['_wp_page_template'] ) ? $custom_fields['_wp_page_template'] : '';
-  if ( empty( $meta ) || 'default' === $meta ) {
-      $custom_fields['_wp_page_template'] = 'page-templates/template-blank.php';
-  }
+	$meta                               = isset( $custom_fields['_wp_page_template'] ) ? $custom_fields['_wp_page_template'] : '';
+	$custom_fields['_wp_page_template'] = custom_theme_sanitize_page_template_meta_value( $meta );
 	return $custom_fields;
 }
 
@@ -559,6 +590,13 @@ function custom_theme_replace_domain_urls_in_content( $content ) {
     }
   }
 
+	// Strip environment-specific media library IDs from block attributes.
+	// Image IDs are local to each environment; blocks fall back to their
+	// default theme assets when only the URL (or no value) is present.
+	$content = preg_replace( '/"[a-zA-Z]+ImageId":\d+,?\s*/U', '', $content );
+	// Clean up any trailing commas left before a closing brace/bracket.
+	$content = preg_replace( '/,(\s*[}\]])/m', '$1', $content );
+
 	return $content;
 }
 
@@ -609,7 +647,18 @@ function custom_theme_import_single_page_from_pattern( $data ) {
 
 	// Set custom fields.
 	if ( ! empty( $normalized['custom_fields'] ) ) {
+		// Only private meta keys that are explicitly whitelisted may be written.
+		// Public meta keys (no leading underscore) are always allowed.
+		$allowed_private_meta = array( '_wp_page_template' );
+
       foreach ( $normalized['custom_fields'] as $meta_key => $meta_value ) {
+          $meta_key = sanitize_key( $meta_key );
+        if ( '_' === substr( $meta_key, 0, 1 ) && ! in_array( $meta_key, $allowed_private_meta, true ) ) {
+            continue;
+        }
+        if ( '_wp_page_template' === $meta_key ) {
+            $meta_value = custom_theme_sanitize_page_template_meta_value( $meta_value );
+        }
           update_post_meta( $page_id, $meta_key, $meta_value );
       }
 	}
@@ -634,7 +683,7 @@ function custom_theme_resolve_pattern_files( $pattern_dir, $selected_files ) {
       throw new Exception( sprintf( 'Page patterns directory is not readable: %s. Check file permissions.', esc_html( $pattern_dir ) ) );
   }
 
-	$all_files = glob( $pattern_dir . '/*.php' );
+	$all_files = glob( $pattern_dir . '/*.json' );
 
   if ( empty( $all_files ) ) {
       throw new Exception( sprintf( 'No page pattern files found in: %s', esc_html( $pattern_dir ) ) );
@@ -661,23 +710,81 @@ function custom_theme_resolve_pattern_files( $pattern_dir, $selected_files ) {
 }
 
 /**
+ * Normalize the page import mode to a supported value.
+ *
+ * @param string $mode Raw import mode from request/UI.
+ * @return string One of: skip_existing, update_existing, create_copy.
+ */
+function custom_theme_page_sync_normalize_import_mode( $mode ) {
+	$normalized = sanitize_key( (string) $mode );
+	$allowed    = array( 'skip_existing', 'update_existing', 'create_copy' );
+
+  if ( ! in_array( $normalized, $allowed, true ) ) {
+      return 'skip_existing';
+  }
+
+	return $normalized;
+}
+
+/**
+ * Generate a unique page slug for imported copies.
+ *
+ * @param string $base_slug Base slug from pattern file.
+ * @return string Unique slug that does not collide with existing pages.
+ */
+function custom_theme_page_sync_generate_copy_slug( $base_slug ) {
+	$base_slug = sanitize_title( $base_slug );
+	$candidate = $base_slug . '-imported-copy';
+	$index     = 2;
+
+  while ( get_page_by_path( $candidate, OBJECT, 'page' ) instanceof \WP_Post ) {
+      $candidate = $base_slug . '-imported-copy-' . $index;
+      ++$index;
+  }
+
+	return $candidate;
+}
+
+/**
  * Import a single pattern file and return whether the page was created or updated.
  *
  * @param string $file Absolute path to the pattern file.
- * @return string 'created' or 'updated'.
+ * @param string $import_mode Import mode: skip_existing, update_existing, create_copy.
+ * @return string 'created', 'updated', 'skipped', or 'copied'.
  * @throws Exception If the file is unreadable, invalid, or import fails.
  */
-function custom_theme_import_page_file( $file ) {
+function custom_theme_import_page_file( $file, $import_mode = 'skip_existing' ) {
   if ( ! is_readable( $file ) ) {
       throw new Exception( sprintf( 'File is not readable: %s', esc_html( basename( $file ) ) ) );
   }
 
-	$data     = include $file; // phpcs:ignore WordPressVIPMinimum.Files.IncludingFile.UsingVariable
+	$raw  = file_get_contents( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+	$data = $raw ? json_decode( $raw, true ) : null;
+
+  if ( null === $data || JSON_ERROR_NONE !== json_last_error() ) {
+      throw new Exception( sprintf( 'Invalid JSON in file: %s', esc_html( basename( $file ) ) ) );
+  }
+
 	$filename = basename( $file );
 
 	custom_theme_validate_pattern_file_data( $data, $filename );
+	$import_mode = custom_theme_page_sync_normalize_import_mode( $import_mode );
 
 	$existing = get_page_by_path( $data['slug'], OBJECT, 'page' );
+
+  if ( $existing instanceof \WP_Post ) {
+    if ( 'skip_existing' === $import_mode ) {
+        return 'skipped';
+    }
+
+    if ( 'create_copy' === $import_mode ) {
+        $data['slug']  = custom_theme_page_sync_generate_copy_slug( $data['slug'] );
+        $data['title'] = sprintf( '%s (Imported Copy)', $data['title'] );
+        custom_theme_import_single_page_from_pattern( $data );
+        return 'copied';
+    }
+  }
+
 	custom_theme_import_single_page_from_pattern( $data );
 
 	return $existing instanceof \WP_Post ? 'updated' : 'created';
@@ -686,23 +793,27 @@ function custom_theme_import_page_file( $file ) {
 /**
  * Import page content from pattern files.
  *
- * @param array $selected_files Optional list of filenames (basename) to import. Empty = import all.
- * @return array Array with 'created', 'updated' counts, and optional 'errors'.
+ * @param array  $selected_files Optional list of filenames (basename) to import. Empty = import all.
+ * @param string $import_mode    Import mode: skip_existing, update_existing, create_copy.
+ * @return array Array with created/updated/skipped/copied counts and optional errors.
  * @throws Exception If import fails completely.
  */
-function custom_theme_import_pages_from_patterns( $selected_files = array() ) {
+function custom_theme_import_pages_from_patterns( $selected_files = array(), $import_mode = 'skip_existing' ) {
 	$pattern_dir   = get_theme_file_path( 'template-parts/page-patterns' );
 	$pattern_files = custom_theme_resolve_pattern_files( $pattern_dir, $selected_files );
+	$import_mode   = custom_theme_page_sync_normalize_import_mode( $import_mode );
 
 	$counts = array(
 		'created' => 0,
 		'updated' => 0,
+		'skipped' => 0,
+		'copied'  => 0,
     );
 	$errors = array();
 
     foreach ( $pattern_files as $file ) {
       try {
-          ++$counts[ custom_theme_import_page_file( $file ) ];
+          ++$counts[ custom_theme_import_page_file( $file, $import_mode ) ];
       } catch ( Exception $e ) {
         $errors[] = basename( $file ) . ': ' . $e->getMessage();
       }
@@ -719,6 +830,62 @@ function custom_theme_import_pages_from_patterns( $selected_files = array() ) {
 
 	return $result;
 }
+
+/**
+ * One-time bulk repair for invalid _wp_page_template values on pages.
+ *
+ * Repairs historical bad data (for example, array values imported from pattern files)
+ * so core template/body class logic always receives a string.
+ *
+ * @return void
+ */
+function custom_theme_bulk_repair_page_template_meta_once() {
+	global $wpdb;
+
+	$repair_option_key = 'custom_theme_page_template_meta_bulk_repaired_v1';
+
+  if ( '1' === get_option( $repair_option_key, '0' ) ) {
+      return;
+  }
+
+	$rows = $wpdb->get_results(
+      $wpdb->prepare(
+        "SELECT pm.meta_id, pm.post_id, pm.meta_value
+			FROM {$wpdb->postmeta} pm
+			INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+			WHERE pm.meta_key = %s
+			AND p.post_type = %s",
+        '_wp_page_template',
+        'page'
+      )
+	);
+
+  if ( empty( $rows ) ) {
+      update_option( $repair_option_key, '1', false );
+      return;
+  }
+
+  foreach ( $rows as $row ) {
+          $raw_meta_value = maybe_unserialize( $row->meta_value );
+
+    if ( ! is_string( $raw_meta_value ) ) {
+            $sanitized_meta_value = custom_theme_sanitize_page_template_meta_value( $raw_meta_value );
+
+            $wpdb->update(
+              $wpdb->postmeta,
+              array( 'meta_value' => $sanitized_meta_value ),
+              array( 'meta_id' => (int) $row->meta_id ),
+              array( '%s' ),
+              array( '%d' )
+            );
+
+            clean_post_cache( (int) $row->post_id );
+    }
+  }
+
+	update_option( $repair_option_key, '1', false );
+}
+add_action( 'init', 'custom_theme_bulk_repair_page_template_meta_once', 5 );
 
 /**
  * Handle export pages action.
@@ -801,11 +968,12 @@ function custom_theme_handle_export_pages_action( $page_ids ) {
 /**
  * Handle import pages action.
  *
- * @param array $selected_files Optional list of filenames to import. Empty = import all.
+ * @param array  $selected_files Optional list of filenames to import. Empty = import all.
+ * @param string $import_mode    Import mode: skip_existing, update_existing, create_copy.
  */
-function custom_theme_handle_import_pages_action( $selected_files = array() ) {
+function custom_theme_handle_import_pages_action( $selected_files = array(), $import_mode = 'skip_existing' ) {
   try {
-      $result = custom_theme_import_pages_from_patterns( $selected_files );
+			$result = custom_theme_import_pages_from_patterns( $selected_files, $import_mode );
 
       $message = sprintf(
           // translators: %1$d is pages created, %2$d is pages updated.
@@ -833,6 +1001,24 @@ function custom_theme_handle_import_pages_action( $selected_files = array() ) {
 
     if ( isset( $result['errors'] ) && ! empty( $result['errors'] ) ) {
       $message .= ' | ' . __( 'Errors:', 'mbn-theme' ) . ' ' . implode( '; ', $result['errors'] );
+    }
+
+    if ( ! empty( $result['copied'] ) ) {
+				// translators: %d is number of pages created as imported copies.
+			$copied_message = __( 'Copied: %d', 'mbn-theme' );
+        $message           .= sprintf(
+          ' | ' . $copied_message,
+          (int) $result['copied']
+        );
+    }
+
+    if ( ! empty( $result['skipped'] ) ) {
+				// translators: %d is number of existing pages skipped.
+			$skipped_message = __( 'Skipped existing: %d', 'mbn-theme' );
+        $message            .= sprintf(
+          ' | ' . $skipped_message,
+          (int) $result['skipped']
+        );
     }
 
       add_settings_error(
@@ -882,6 +1068,21 @@ function custom_theme_handle_page_sync_actions() {
       $selected_files = isset( $_POST['page_files'] )
           ? array_map( 'sanitize_file_name', (array) $_POST['page_files'] )
           : array();
+	  $import_mode    = isset( $_POST['import_mode'] )
+		  ? custom_theme_page_sync_normalize_import_mode( sanitize_text_field( wp_unslash( $_POST['import_mode'] ) ) )
+		  : 'skip_existing';
+	  $sync_password  = isset( $_POST['sync_password'] )
+		  ? (string) wp_unslash( $_POST['sync_password'] )
+		  : '';
+
+	if ( ! custom_theme_verify_sync_password( $sync_password ) ) {
+		$message = '' === custom_theme_get_sync_password()
+			? esc_html__( 'Import blocked: sync password is not configured. Define CUSTOM_THEME_SYNC_PASSWORD in wp-config.php or environment.', 'mbn-theme' )
+			: esc_html__( 'Import blocked: invalid sync password.', 'mbn-theme' );
+
+		add_settings_error( 'custom_theme_page_sync', 'invalid_sync_password', $message, 'error' );
+		return;
+	}
 
     if ( empty( $selected_files ) ) {
         add_settings_error(
@@ -893,7 +1094,7 @@ function custom_theme_handle_page_sync_actions() {
         return;
     }
 
-      custom_theme_handle_import_pages_action( $selected_files );
+	custom_theme_handle_import_pages_action( $selected_files, $import_mode );
   } elseif ( 'save_domain_settings' === $action ) {
       $local_url      = isset( $_POST['local_url'] ) ? sanitize_text_field( wp_unslash( $_POST['local_url'] ) ) : '';
       $deployment_url = isset( $_POST['deployment_url'] ) ? sanitize_text_field( wp_unslash( $_POST['deployment_url'] ) ) : '';
@@ -965,7 +1166,7 @@ function custom_theme_handle_save_domain_settings( $local_url, $deployment_url )
 /**
  * Render Page Content Sync page.
  *
- * phpcs:disable Generic.Metrics.CyclomaticComplexity
+ * phpcs:disable Generic.Metrics.CyclomaticComplexity,Generic.Metrics.NestingLevel
  */
 function custom_theme_render_page_sync_page() {
 	$pages = custom_theme_get_syncable_pages();
@@ -977,9 +1178,8 @@ function custom_theme_render_page_sync_page() {
 
 		<!-- Domain URL Settings -->
 		<div id="domain-settings" class="card" style="max-width: 900px; margin-top: 20px; background: #f0f6fc; border-left: 4px solid #2271b1;">
-			<h2>⚙️ Domain URL Settings</h2>
-			<p>Configure your local and deployment URLs for automatic domain replacement during import.</p>
-			<p>URLs from the source domain will automatically be replaced with your current site URL: <code><?php echo esc_html( get_site_url() ); ?></code></p>
+			<h2><?php esc_html_e( 'Domain URL Settings', 'mbn-theme' ); ?></h2>
+			<p><?php esc_html_e( 'Configure source URLs used for domain replacement during import.', 'mbn-theme' ); ?></p>
 
 			<?php
 			$local_url      = get_option( 'custom_theme_local_url', '' );
@@ -1003,12 +1203,9 @@ function custom_theme_render_page_sync_page() {
 							id="local-url" 
 							name="local_url" 
 							value="<?php echo esc_attr( $local_url ); ?>"
-							placeholder="https://blacklineguardianfund.dev.local"
+							placeholder="https://hastingsandhastings.dev.local"
 							style="width: 100%; max-width: 500px; padding: 8px 12px; font-size: 14px; border: 1px solid #8c8f94; border-radius: 4px;"
 						>
-						<p style="margin: 5px 0 0; color: #666; font-size: 13px;">
-							Your local development domain (e.g., Laragon, XAMPP, Local WP)
-						</p>
 					</div>
 
 					<!-- Deployment URL Field -->
@@ -1021,30 +1218,10 @@ function custom_theme_render_page_sync_page() {
 							id="deployment-url" 
 							name="deployment_url" 
 							value="<?php echo esc_attr( $deployment_url ); ?>"
-							placeholder="https://staging2.blacklineguardianfund.com"
+							placeholder="https://newsite-staging.hastingsandhastings.com"
 							style="width: 100%; max-width: 500px; padding: 8px 12px; font-size: 14px; border: 1px solid #8c8f94; border-radius: 4px;"
 						>
-						<p style="margin: 5px 0 0; color: #666; font-size: 13px;">
-							Your staging or production server domain
-						</p>
 					</div>
-				</div>
-
-				<?php if ( ! $is_configured ) : ?>
-					<div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; margin-bottom: 15px;">
-						<strong>📝 First Time Setup:</strong> 
-						Configure your local and deployment URLs above. Both http:// and https:// variants will be handled automatically.
-					</div>
-				<?php endif; ?>
-
-				<div style="background: #e7f3ff; border-left: 4px solid #2271b1; padding: 10px 15px; margin-bottom: 15px;">
-					<strong>💡 How It Works:</strong>
-					<ul style="margin: 5px 0 0 20px;">
-						<li>Enter your local URL (e.g., <code>https://yoursite.local</code>)</li>
-						<li>Enter your deployment URL (e.g., <code>https://staging.yoursite.com</code>)</li>
-						<li>During import, URLs will automatically be replaced to match the current site</li>
-						<li>Both http:// and https:// versions are handled automatically</li>
-					</ul>
 				</div>
 
 				<div style="display: flex; gap: 10px; align-items: center;">
@@ -1062,56 +1239,14 @@ function custom_theme_render_page_sync_page() {
 					<?php endif; ?>
 				</div>
 			</form>
-
-			<details style="margin-top: 20px; padding: 10px; background: #f6f7f7; border-radius: 4px;">
-				<summary style="cursor: pointer; font-weight: 600;">
-					📋 Current Active Domains for Replacement
-				</summary>
-				<div style="margin-top: 10px;">
-					<?php $active_domains = custom_theme_get_source_domains(); ?>
-					<?php if ( ! empty( $active_domains ) ) : ?>
-						<p style="color: #666; font-size: 13px; margin-bottom: 10px;">
-							These domains will be replaced with <code><?php echo esc_html( get_site_url() ); ?></code> during import:
-						</p>
-						<ul style="font-family: monospace; font-size: 12px; margin-left: 20px; list-style: disc;">
-							<?php foreach ( $active_domains as $domain ) : ?>
-								<li><?php echo esc_html( $domain ); ?></li>
-							<?php endforeach; ?>
-						</ul>
-					<?php else : ?>
-						<p style="color: #666; font-size: 13px;">No domains configured for replacement.</p>
-					<?php endif; ?>
-				</div>
-			</details>
+			<p style="margin-top: 12px; color: #50575e;">
+				<?php esc_html_e( 'Current site URL:', 'mbn-theme' ); ?> <code><?php echo esc_html( get_site_url() ); ?></code>
+			</p>
 		</div>
 
 		<div class="card" style="max-width: 900px; margin-top: 20px;">
 			<h2>📤 Export Pages to Files</h2>
-			<p>Select pages below to export <strong>ALL page data</strong> to <code>template-parts/page-patterns/</code> folder.</p>
-			<p><strong>Exported data includes:</strong></p>
-			<ul style="margin-left: 20px;">
-				<li>✅ Page content (blocks)</li>
-				<li>✅ Page title & slug (URL)</li>
-				<li>✅ Page status (publish, draft, private)</li>
-				<li>✅ Featured image (from theme assets or uploads)</li>
-				<li>✅ Page template</li>
-				<li>✅ Parent page & menu order</li>
-				<li>✅ Custom fields/meta</li>
-			</ul>
-			
-			<div style="background: #e7f3ff; border-left: 4px solid #2271b1; padding: 10px 15px; margin: 15px 0;">
-				<strong>💡 Pro Tip: Using Theme Assets for Images</strong>
-				<p style="margin: 5px 0;">For images that should ship via Git (hero backgrounds, team photos, etc.):</p>
-				<ol style="margin-left: 20px; margin-bottom: 5px;">
-					<li>Place images in <code>assets/images/</code> folder</li>
-					<li>Use them as featured images or in blocks</li>
-					<li>Export will save as: <code>'featured_image_path' => 'assets/images/hero.jpg'</code></li>
-					<li>On import, image ships via Git automatically ✅</li>
-				</ol>
-				<p style="margin: 5px 0; font-size: 12px; color: #666;">
-					See <code>assets/images/README.md</code> for guidelines.
-				</p>
-			</div>
+			<p><?php esc_html_e( 'Select pages to export to template-parts/page-patterns/*.json.', 'mbn-theme' ); ?></p>
 			
 			<?php if ( empty( $pages ) ) : ?>
 				<p><em>No published pages found.</em></p>
@@ -1141,6 +1276,15 @@ function custom_theme_render_page_sync_page() {
 								<?php
 								$has_thumbnail = has_post_thumbnail( $page->ID );
 								$page_template = get_page_template_slug( $page->ID );
+								$template_slug = '';
+								if ( is_string( $page_template ) ) {
+									$template_slug = $page_template;
+								} elseif ( is_array( $page_template ) ) {
+									$first_template = reset( $page_template );
+                                  if ( is_string( $first_template ) ) {
+                                      $template_slug = $first_template;
+                                  }
+								}
 								?>
 								<tr>
 									<td>
@@ -1151,8 +1295,8 @@ function custom_theme_render_page_sync_page() {
 										<?php if ( $page->post_parent > 0 ) : ?>
 											<br><small style="color: #666;">↳ Child of: <?php echo esc_html( get_the_title( $page->post_parent ) ); ?></small>
 										<?php endif; ?>
-										<?php if ( ! empty( $page_template ) && 'default' !== $page_template ) : ?>
-											<br><small style="color: #2271b1;">📄 Template: <?php echo esc_html( basename( $page_template, '.php' ) ); ?></small>
+										<?php if ( ! empty( $template_slug ) && 'default' !== $template_slug ) : ?>
+											<br><small style="color: #2271b1;">📄 Template: <?php echo esc_html( basename( $template_slug, '.php' ) ); ?></small>
 										<?php endif; ?>
 										<div class="row-actions">
 											<a href="<?php echo esc_url( get_edit_post_link( $page->ID ) ); ?>" target="_blank">Edit</a> |
@@ -1187,17 +1331,8 @@ function custom_theme_render_page_sync_page() {
 
 		<div class="card" style="max-width: 900px; margin-top: 20px;">
 			<h2>📥 Import Pages from Files</h2>
-			<p>Select pages to import from <code>template-parts/page-patterns/*.php</code> files. This will <strong>create or update</strong> pages with matching slugs.</p>
-			<p><strong>⚠️ Warning:</strong> This will <span style="color: #d63638;">OVERWRITE existing pages</span> with the same slug.</p>
-			
-			<div style="background: #e7f3ff; border-left: 4px solid #2271b1; padding: 10px 15px; margin: 15px 0;">
-				<strong>🔄 Automatic URL Replacement</strong>
-				<p style="margin: 5px 0;">Image and link URLs are automatically updated to match your current site domain during import.</p>
-				<p style="margin: 5px 0; font-size: 12px; color: #666;">
-					<strong>Current site:</strong> <code><?php echo esc_html( get_site_url() ); ?></code><br>
-					<strong>Configured domains:</strong> <?php echo count( custom_theme_get_source_domains() ); ?> domains <a href="#domain-settings" style="text-decoration: none;">→ Manage below</a>
-				</p>
-			</div>
+			<p>Select pages to import from <code>template-parts/page-patterns/*.json</code> files. Import Mode controls whether existing slugs are skipped, updated, or copied.</p>
+			<p style="color: #50575e;"><strong><?php esc_html_e( 'Note:', 'mbn-theme' ); ?></strong> <?php esc_html_e( 'Overwrite happens only in Update existing mode.', 'mbn-theme' ); ?></p>
 
 			<?php $importable_files = custom_theme_get_importable_page_files(); ?>
 			<?php if ( empty( $importable_files ) ) : ?>
@@ -1206,6 +1341,28 @@ function custom_theme_render_page_sync_page() {
 				<form method="post" style="margin-top: 20px;">
 					<?php wp_nonce_field( 'custom_theme_page_sync', 'custom_theme_page_sync_nonce' ); ?>
 					<input type="hidden" name="custom_theme_page_sync_action" value="import_pages">
+					<div style="background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:12px 14px;margin:0 0 15px 0;">
+						<label for="page-import-mode" style="display:block;font-weight:600;margin-bottom:6px;">
+							<?php esc_html_e( 'Import Mode', 'mbn-theme' ); ?>
+						</label>
+						<select id="page-import-mode" name="import_mode" style="min-width:280px;">
+							<option value="skip_existing" selected><?php esc_html_e( 'Skip existing pages (safe)', 'mbn-theme' ); ?></option>
+							<option value="update_existing"><?php esc_html_e( 'Update existing pages', 'mbn-theme' ); ?></option>
+							<option value="create_copy"><?php esc_html_e( 'Create imported copies for existing pages', 'mbn-theme' ); ?></option>
+						</select>
+						<p style="margin:6px 0 0;color:#646970;">
+							<?php esc_html_e( 'Choose how to handle files whose slug already exists in the database.', 'mbn-theme' ); ?>
+						</p>
+						<?php if ( custom_theme_is_sync_password_required() ) : ?>
+							<label for="page-sync-password" style="display:block;font-weight:600;margin:10px 0 6px;">
+								<?php esc_html_e( 'Sync Password', 'mbn-theme' ); ?>
+							</label>
+							<input type="password" id="page-sync-password" name="sync_password" autocomplete="current-password" style="min-width:280px;" required>
+							<p style="margin:6px 0 0;color:#646970;">
+								<?php esc_html_e( 'Required on production before import runs.', 'mbn-theme' ); ?>
+							</p>
+						<?php endif; ?>
+					</div>
 
 					<table class="widefat" style="margin-bottom: 15px;">
 						<thead>
@@ -1258,76 +1415,6 @@ function custom_theme_render_page_sync_page() {
 			<?php endif; ?>
 		</div>
 
-		<div class="card" style="max-width: 900px; background: #fff3cd; border-left: 4px solid #ffc107;">
-			<h2>⚠️ Important: Development Workflow</h2>
-			
-			<h3 style="margin-top: 0;">✅ Current Phase: Dev-Only Workflow</h3>
-			<p><strong>ALL page changes should be done on LOCAL only:</strong></p>
-			<ul style="margin-left: 20px;">
-				<li>✅ Page content (blocks)</li>
-				<li>✅ Featured images (use <code>assets/images/</code> for structural images)</li>
-				<li>✅ Page URL (slug)</li>
-				<li>✅ Page status (publish/draft)</li>
-				<li>✅ Page attributes (parent, template, order)</li>
-				<li>✅ Custom fields/meta</li>
-			</ul>
-			<p><strong style="color: #d63638;">⚠️ DO NOT edit pages directly on staging/production!</strong><br>
-			Local changes will overwrite any staging/production edits during import.</p>
-			
-			<hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
-			
-			<h3>🔮 Future Phase: When Clients Edit Production</h3>
-			<p>When clients start editing production pages, this system will need updates to prevent conflicts:</p>
-			<ul style="margin-left: 20px;">
-				<li>📝 <strong>Page ownership flags</strong> - Mark pages as "dev-managed" or "client-managed"</li>
-				<li>🔒 <strong>Import protection</strong> - Skip client-managed pages during import</li>
-				<li>⚠️ <strong>Conflict detection</strong> - Warn when production has newer changes</li>
-			</ul>
-			<p style="margin-bottom: 5px;"><strong>Recommended strategy for MVP 2:</strong></p>
-			<ul style="margin-left: 20px;">
-				<li>Devs continue to manage structural pages (About, Services, etc.)</li>
-				<li>Clients create NEW pages or edit blog posts only</li>
-				<li>Add "Lock from imports" option for client-edited pages</li>
-			</ul>
-			<p style="font-size: 12px; color: #666; margin-top: 10px;">
-				📖 See <code>DEVELOPMENT-STRATEGY.md</code> for detailed implementation plans.
-			</p>
-			
-			<hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
-			
-			<p><strong>💡 Better Alternative for reusable layouts:</strong> Use <strong>Block Patterns</strong> (in <code>inc/includes-block-patterns.php</code>) 
-			for repeatable page layouts. Patterns ship via Git automatically and don't require database sync.</p>
-		</div>
-
-		<div class="card" style="max-width: 900px; margin-top: 20px; background: #f0f6fc; border-left: 4px solid #0073aa;">
-			<h2>📚 Workflow Guide</h2>
-			
-			<h3>Option 1: Block Patterns (Recommended)</h3>
-			<p><strong>Best for:</strong> Repeatable page layouts across multiple websites</p>
-			<ol>
-				<li>Edit <code>inc/includes-block-patterns.php</code></li>
-				<li>Create a pattern with your page layout</li>
-				<li>Commit to Git</li>
-				<li>On staging/production: Create page → Insert pattern → Customize text</li>
-			</ol>
-			<p><strong>Pros:</strong> Ships automatically, no sync needed, truly reusable<br>
-			<strong>Cons:</strong> Page content must be customized per environment</p>
-
-			<h3>Option 2: Page Export/Import (This Tool)</h3>
-			<p><strong>Best for:</strong> Structural pages that are identical everywhere</p>
-			<ol>
-				<li>Create/edit page in WordPress admin</li>
-				<li>Export it here (saves to <code>template-parts/page-patterns/</code>)</li>
-				<li>Commit to Git</li>
-				<li>On staging/production: Run Import here</li>
-			</ol>
-			<p><strong>Pros:</strong> Complete page content in Git<br>
-			<strong>Cons:</strong> Manual sync required, overwrites existing pages</p>
-
-			<h3>Option 3: Database Migrations</h3>
-			<p><strong>Best for:</strong> Large sites with lots of content</p>
-			<p>Use plugins like <strong>WP Migrate DB</strong> or <strong>WP CLI</strong> to export/import entire databases.</p>
-		</div>
 	</div>
 	<?php
 }
