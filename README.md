@@ -1,28 +1,56 @@
-# Black Line Security Ops
+# MBN Theme
 
-Custom WordPress theme for My Biz Niche.
+Default WordPress theme baseline for MBN projects.
 
 ## Theme Details
 
-- Theme Name: `Black Line Security Ops`
-- Description: `Custom Theme for MBN`
+- Theme Name: `MBN Theme`
+- Theme URI: https://github.com/MBNDEV/mbn-theme
+- Description: `Default MBN WordPress theme with Gutenberg-first workflow`
 - Version: `1.1.0`
 - Author: `My Biz Niche`
-- Theme URI: [https://github.com/MBNDEV/mbn-theme](https://github.com/MBNDEV/mbn-theme)
-- Author URI: [https://www.mybizniche.com/](https://www.mybizniche.com/)
-- License: `GPL2` - [GPL-2.0](https://www.gnu.org/licenses/gpl-2.0.html)
+- Author URI: https://www.mybizniche.com/
+- License: `GPL2` - https://www.gnu.org/licenses/gpl-2.0.html
 - Text Domain: `mbn-theme`
+
+## Overview
+
+This repository contains a WordPress theme built with:
+
+- native Gutenberg block support
+- Tailwind CSS styling
+- Composer for PHP tooling
+- npm for frontend tooling
+- a Block Template sync system for version-controlled templates
+
+## Latest Features
+
+- Auto-discovery and registration of blocks from `build/blocks/` using `block.json`
+- Unified sync tooling for templates, pages, and nav menus
+- Safer imports with 3 import modes:
+   - Skip existing
+   - Update existing
+   - Create copy
+- Import safety improvements:
+   - Nav import rollback/snapshot protection on destructive operations
+   - Safer JSON/template parsing for file imports
+- Sync import password protection enabled by default on `staging` and `production`
+- Sync password source fallback order:
+   - `CUSTOM_THEME_SYNC_PASSWORD` constant in `wp-config.php`
+   - Environment variable `CUSTOM_THEME_SYNC_PASSWORD`
+   - Theme root `.env` value (`CUSTOM_THEME_SYNC_PASSWORD=...`)
+- Cleaner admin sync UIs focused on essential actions
 
 ## Requirements
 
-- WordPress (current supported version)
-- PHP compatible with WordPress requirements
-- Node.js & npm (for building Gutenberg blocks)
-- Composer (for development tooling)
+- WordPress 5.8+ (or latest supported)
+- PHP version compatible with your WordPress install
+- Node.js and npm for asset builds
+- Composer for PHP dependency management
 
 ## Installation
 
-1. Copy or clone this theme into `wp-content/themes/mbn-theme`.
+1. Copy or clone this theme into `wp-content/themes/mbn-theme`
 2. Install PHP dependencies:
    ```bash
    composer install
@@ -31,223 +59,112 @@ Custom WordPress theme for My Biz Niche.
    ```bash
    npm install
    ```
-4. Build Gutenberg blocks:
+4. Build assets for production:
    ```bash
    npm run build
    ```
-5. In WordPress Admin, go to **Appearance > Themes** and activate **Black Line Guardian Fund Theme**.
+5. Activate the theme in WordPress Admin: **Appearance > Themes**
 
 ## Development
 
+### Frontend Development
+
+- Start the local development build/watch process:
+  ```bash
+  npm run start
+  ```
+- Build production assets:
+  ```bash
+  npm run build
+  ```
+
+### PHP / Theme Development
+
+- Composer manages PHP tooling and packages.
+- Autoloading is configured in `functions.php`.
+- Theme logic and helpers are organized in `inc/`.
+
 ### Block Development
 
-This theme uses **native WordPress Gutenberg blocks** with React and Tailwind CSS.
+This theme ships with Gutenberg block support and a dedicated block folder.
+See `blocks/README.md` for block-specific development details.
 
-**Start development server with hot reload:**
-```bash
-npm run start
-```
+## Project Structure
 
-**Build for production:**
-```bash
-npm run build
-```
+- `assets/` - compiled CSS, JS, images, icons
+- `blocks/` - Gutenberg block code and documentation
+- `inc/` - PHP includes and theme helper files
+- `template-parts/` - reusable template partials and block templates
+- `page-templates/` - classic WordPress page templates
+- `resources/css/` - source CSS assets
+- `scripts/` - utility scripts for versioning and security
 
-See [blocks/README.md](blocks/README.md) for detailed block development guide.
+## Build & Linting
 
-### Figma to Gutenberg Blocks
-
-This theme supports **Figma MCP integration** for converting designs directly to blocks.
-
-**Quick Setup:**
-1. Get your Figma Personal Access Token: https://www.figma.com/developers/api#access-tokens
-2. Copy `.vscode/mcp-settings.json.template` to your MCP settings
-3. Add your token to the configuration
-4. See [.github/FIGMA_MCP_SETUP.md](.github/FIGMA_MCP_SETUP.md) for complete instructions
-
-**Usage:**
-```
-@wp-gutenberg-dev Create a hero block from this Figma design:
-https://www.figma.com/file/YOUR_FILE_ID
-```
-
-### PHP Development
-
-This theme uses Composer autoloading for vendor packages.
-
-- Primary package in use:
-  - `yahnis-elsts/plugin-update-checker`
-- Autoload is conditionally loaded in `functions.php` to avoid duplicate class loading.
-
-## Update Checker
-
-The theme includes GitHub-based update checks through Plugin Update Checker.
-
-- Repository configured in code:
-  - [https://github.com/MBNDEV/mbn-theme](https://github.com/MBNDEV/mbn-theme)
-- Slug configured in code:
-  - `mbn-theme`
-
-## Version Releasing
-
-MBN Theme uses **Semantic Versioning** and **GitHub Releases** to manage versions. This allows developers to use specific stable versions instead of always pulling from the master branch.
-
-### For Developers Using This Theme
-
-**Checkout a specific version:**
-```bash
-# List available versions
-git tag -l
-
-# Checkout a specific stable version
-git checkout v1.0.2
-
-# Or checkout the latest release
-git checkout $(git describe --tags --abbrev=0)
-```
-
-**Update to latest release:**
-```bash
-git fetch --all --tags
-git checkout $(git describe --tags --abbrev=0)
-composer install --no-dev
-npm install
-npm run build
-```
-
-### For WordPress Sites
-
-WordPress sites using this theme will automatically receive update notifications through Plugin Update Checker. Simply update from **WordPress Admin → Appearance → Themes**.
-
-### For Theme Maintainers
-
-**Create a new release:**
-```bash
-# Bump version and update files
-php scripts/bump-version.php 1.1.0
-
-# Commit and tag
-git add -A
-git commit -m "chore: bump version to 1.1.0"
-git tag -a v1.1.0 -m "Release v1.1.0"
-git push origin main --tags
-```
-
-The GitHub Actions workflow will automatically create a release with built assets.
-
-### Documentation
-
-- **[Versioning Guide](docs/VERSIONING.md)** - Complete guide for creating and using releases
-- **[Release Checklist](docs/RELEASE-CHECKLIST.md)** - Step-by-step release checklist
-- **[CHANGELOG.md](CHANGELOG.md)** - Version history and release notes
-
-## Linting
-
-Run WordPress coding standards checks before committing:
-
-- `composer run lint`
-- `composer run lint:fix`
-- `composer run lint:security`
-- `composer run lint:run`
+- Install dependencies: `composer install && npm install`
+- Build assets: `npm run build`
+- Start dev mode: `npm run start`
+- Run PHP coding standards: `composer run lint`
+- Fix linting issues: `composer run lint:fix`
 
 ## Block Template Sync System
 
-The theme includes a comprehensive template sync system for deploying Block Templates across environments.
+The theme includes a template sync mechanism for keeping Block Templates in sync between database and files.
 
-### What Gets Synced
+- `template-parts/` stores header, footer, and layout block templates
+- `page-templates/` contains classic PHP page templates
+- Sync tools are available in the WordPress admin to export/import templates
 
-**System Templates** (`template-parts/`):
-- `header-template.php` → Header Template Block
-- `footer-template.php` → Footer Template Block
+## Production Password Protection for Sync Imports
 
-**Page Template Blocks** (`template-parts/layouts/`):
-- `blank.php` → Blank Page Template blocks
-- `sample.php` → Sample Page Template blocks
-- `sidebar.php` → Sidebar Page Template blocks
-- `single.php` → Single Post Template blocks
+Import actions for Page Sync, Nav Menu Sync, and Template Sync support password protection on staging and production by default.
 
-**Traditional WordPress Templates** (`page-templates/` - NOT synced):
-- `template-blank.php`, `template-sample.php`, etc.
-- These contain traditional WordPress template code (get_header(), get_footer(), etc.)
-- Edited directly in PHP, tracked in Git normally
-- Create corresponding Block Template posts automatically
+### Configure in `wp-config.php`
 
-### Workflow
+Add a strong secret for staging/production environments:
 
-**Local Development:**
-1. Edit Block Templates in WordPress Admin → Block Templates
-2. Go to **Block Templates → Sync Tools**
-3. Click **"📤 Export to Files"** to save block content to PHP files
-4. Commit files to Git:
-   - `template-parts/*.php` (header/footer)
-   - `template-parts/layouts/*.php` (page template blocks)
-5. Push to GitHub
-
-**Staging/Production Deployment:**
-1. Pull latest code from Git
-2. Go to **Block Templates → Sync Tools**
-3. Click **"📥 Import from Files"** to overwrite database with file content
-4. All template block content is now synced!
-
-### Why This System?
-
-Block Templates are stored in the WordPress database, but we need to:
-- Version control template content
-- Deploy template changes across environments
-- Maintain consistency between local, staging, and production
-
-The sync tools provide bi-directional sync between:
-- **Files** (Git-tracked, version controlled)
-- **Database** (Block Template posts, editable in WordPress)
-
-## Deployment
-
-This theme uses **GitHub Actions** for automated deployment to Staging and Production environments.
-
-### Quick Start
-
-```bash
-# Deploy to Staging
-git push origin develop
-
-# Deploy to Production
-git push origin master
+```php
+define( 'CUSTOM_THEME_SYNC_PASSWORD', 'replace-with-a-strong-unique-password' );
 ```
 
-### What Gets Deployed
+You can also provide the value via environment variable:
 
-Each deployment automatically:
-- ✅ Builds Gutenberg blocks (`npm run build`)
-- ✅ Compiles Tailwind CSS
-- ✅ Installs production dependencies
-- ✅ Syncs files via rsync
-- ✅ Excludes dev files and dependencies
+```text
+CUSTOM_THEME_SYNC_PASSWORD=replace-with-a-strong-unique-password
+```
 
-### Documentation
+Or place it in a theme root `.env` file:
 
-- **Setup Guide**: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
-- **Setup Checklist**: [docs/DEPLOYMENT_CHECKLIST.md](docs/DEPLOYMENT_CHECKLIST.md)
-- **Workflow File**: [.github/workflows/deploy.yml](.github/workflows/deploy.yml)
+```text
+CUSTOM_THEME_SYNC_PASSWORD=replace-with-a-strong-unique-password
+```
 
-### Required Secrets
+### Default behavior
 
-Configure in **Repository → Settings → Secrets**:
+- Password is required by default when `wp_get_environment_type()` is `staging` or `production`.
+- Import is blocked if password is missing or incorrect.
+- If no password is configured while protection is required, imports are blocked.
 
-| Secret | Description |
-|--------|-------------|
-| `DO_HOST` | Server hostname or IP |
-| `DO_SSH_USER` | SSH username |
-| `DO_SSH_KEY` | SSH private key |
-| `DO_SSH_PORT` | SSH port (default: 22) |
-| `WP_STG_THEME_DIR` | Staging theme path |
-| `WP_PROD_THEME_DIR` | Production theme path |
+### Related admin tools
 
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed setup instructions.
+- Tools -> Page Content Sync (import)
+- Tools -> Nav Menu Sync (import)
+- Block Templates -> Sync Tools (import)
 
-## Security
+### Optional customization
 
-Please review `SECURITY.md` for:
+Developers can override whether password is required using the `custom_theme_sync_password_required` filter.
 
-- supported versions
-- vulnerability reporting process
-- enforced secure coding standards
+## Useful Links
+
+- `CHANGELOG.md` - release notes and version history
+- `docs/DEPLOYMENT.md` - deployment guide
+- `docs/DEPLOYMENT_CHECKLIST.md` - deployment checklist
+- `docs/VERSIONING.md` - versioning workflow
+- `docs/RELEASE-CHECKLIST.md` - release process
+- `SECURITY.md` - security policy and guidance
+- `blocks/README.md` - block development documentation
+
+## Notes
+
+This README is intended for theme maintainers and developers working with the WordPress theme. For environment-specific deployment and sync workflows, refer to the `docs/` directory.
