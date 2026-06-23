@@ -7,3 +7,4 @@ build/
 *.hot-update.json
 .DS_Store
 html_tailwind/*
+.env
