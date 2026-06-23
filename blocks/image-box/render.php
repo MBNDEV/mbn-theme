@@ -114,11 +114,11 @@ $title_tag          = in_array( $attributes['titleTag'], $allowed_title_tags, tr
 
 $style_string = static function ( $declarations ) {
 	$style = '';
-	foreach ( $declarations as $property => $value ) {
-		if ( '' !== $value && null !== $value ) {
-			$style .= $property . ':' . $value . ';';
-		}
-	}
+  foreach ( $declarations as $property => $value ) {
+    if ( '' !== $value && null !== $value ) {
+        $style .= $property . ':' . $value . ';';
+    }
+  }
 	return $style;
 };
 
@@ -129,19 +129,19 @@ $shadow_map = array(
 );
 
 $container_style = array(
-	'width'         => $attributes['containerWidth'],
-	'padding-top'   => $attributes['containerPaddingTop'],
-	'padding-right' => $attributes['containerPaddingRight'],
-	'padding-bottom'=> $attributes['containerPaddingBottom'],
-	'padding-left'  => $attributes['containerPaddingLeft'],
-	'margin-top'    => $attributes['containerMarginTop'],
-	'margin-right'  => $attributes['containerMarginRight'],
-	'margin-bottom' => $attributes['containerMarginBottom'],
-	'margin-left'   => $attributes['containerMarginLeft'],
-	'color'         => $attributes['containerColor'],
-	'border-radius' => $attributes['containerBorderRadius'],
-	'border-width'  => $attributes['containerBorderWidth'],
-	'border-color'  => $attributes['containerBorderColor'],
+	'width'          => $attributes['containerWidth'],
+	'padding-top'    => $attributes['containerPaddingTop'],
+	'padding-right'  => $attributes['containerPaddingRight'],
+	'padding-bottom' => $attributes['containerPaddingBottom'],
+	'padding-left'   => $attributes['containerPaddingLeft'],
+	'margin-top'     => $attributes['containerMarginTop'],
+	'margin-right'   => $attributes['containerMarginRight'],
+	'margin-bottom'  => $attributes['containerMarginBottom'],
+	'margin-left'    => $attributes['containerMarginLeft'],
+	'color'          => $attributes['containerColor'],
+	'border-radius'  => $attributes['containerBorderRadius'],
+	'border-width'   => $attributes['containerBorderWidth'],
+	'border-color'   => $attributes['containerBorderColor'],
 );
 
 if ( 'none' !== $attributes['containerBorderStyle'] ) {
@@ -159,13 +159,13 @@ if ( 'custom' === $attributes['containerShadow'] && ! empty( $attributes['contai
 }
 
 $image_style = array(
-	'width'        => $attributes['imageWidth'],
-	'height'       => $attributes['imageHeight'],
-	'object-fit'   => $attributes['imageObjectFit'],
-	'margin-top'   => $attributes['imageMarginTop'],
-	'margin-right' => $attributes['imageMarginRight'],
-	'margin-bottom'=> $attributes['imageMarginBottom'],
-	'margin-left'  => $attributes['imageMarginLeft'],
+	'width'         => $attributes['imageWidth'],
+	'height'        => $attributes['imageHeight'],
+	'object-fit'    => $attributes['imageObjectFit'],
+	'margin-top'    => $attributes['imageMarginTop'],
+	'margin-right'  => $attributes['imageMarginRight'],
+	'margin-bottom' => $attributes['imageMarginBottom'],
+	'margin-left'   => $attributes['imageMarginLeft'],
 );
 
 $title_style = array(
@@ -232,10 +232,10 @@ if ( 'none' !== $attributes['buttonBorderStyle'] ) {
 $block_id = sanitize_html_class( $attributes['blockId'] );
 
 $wrapper_attributes = get_block_wrapper_attributes(
-	array(
-		'class' => trim( 'mbn-image-box is-pos-' . sanitize_html_class( $attributes['contentPosition'] ) . ' ' . $block_id ),
-		'style' => esc_attr( $style_string( $container_style ) ),
-	)
+  array(
+	  'class' => trim( 'mbn-image-box is-pos-' . sanitize_html_class( $attributes['contentPosition'] ) . ' ' . $block_id ),
+	  'style' => esc_attr( $style_string( $container_style ) ),
+  )
 );
 
 $custom_css = '';
@@ -246,28 +246,28 @@ if ( ! empty( $attributes['customCss'] ) && ! empty( $block_id ) ) {
 $image_html = '';
 if ( ! empty( $attributes['imageId'] ) ) {
 	$image_html = wp_get_attachment_image(
-		(int) $attributes['imageId'],
-		$attributes['imageSize'] ?: 'full',
-		false,
-		array(
-			'alt'   => $attributes['imageAlt'],
-			'style' => $style_string( $image_style ),
-		)
+      (int) $attributes['imageId'],
+      ! empty( $attributes['imageSize'] ) ? $attributes['imageSize'] : 'full',
+      false,
+      array(
+		  'alt'   => $attributes['imageAlt'],
+		  'style' => $style_string( $image_style ),
+	  )
 	);
 }
 if ( empty( $image_html ) && ! empty( $attributes['imageUrl'] ) ) {
 	$image_html = sprintf(
-		'<img src="%1$s" alt="%2$s" style="%3$s" />',
-		esc_url( $attributes['imageUrl'] ),
-		esc_attr( $attributes['imageAlt'] ),
-		esc_attr( $style_string( $image_style ) )
+      '<img src="%1$s" alt="%2$s" style="%3$s" />',
+      esc_url( $attributes['imageUrl'] ),
+      esc_attr( $attributes['imageAlt'] ),
+      esc_attr( $style_string( $image_style ) )
 	);
 }
 
 $button_variant_class = static function ( $variant ) {
-	if ( in_array( $variant, array( 'primary', 'secondary', 'outline' ), true ) ) {
-		return 'btn-' . $variant;
-	}
+  if ( in_array( $variant, array( 'primary', 'secondary', 'outline' ), true ) ) {
+      return 'btn-' . $variant;
+  }
 	return 'btn-primary';
 };
 
@@ -276,9 +276,9 @@ $open_box      = ! empty( $attributes['boxLinkUrl'] ) ? '<a class="mbn-image-box
 $close_box     = ! empty( $attributes['boxLinkUrl'] ) ? '</a>' : '';
 ?>
 
-<div <?php echo $wrapper_attributes; ?>>
+<div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped by get_block_wrapper_attributes ?>>
 	<?php if ( ! empty( $custom_css ) ) : ?>
-		<style><?php echo wp_strip_all_tags( $custom_css ); ?></style>
+		<style><?php echo esc_html( wp_strip_all_tags( $custom_css ) ); ?></style>
 	<?php endif; ?>
 	<?php echo wp_kses_post( $open_box ); ?>
 	<?php if ( ! empty( $image_html ) ) : ?>
@@ -302,7 +302,7 @@ $close_box     = ! empty( $attributes['boxLinkUrl'] ) ? '</a>' : '';
 			<?php if ( ! empty( $attributes['button1Text'] ) ) : ?>
 				<a
 					class="mbn-image-box__button <?php echo esc_attr( $button_variant_class( $attributes['button1Style'] ) ); ?>"
-					href="<?php echo esc_url( $attributes['button1Url'] ?: '#' ); ?>"
+				href="<?php echo esc_url( ! empty( $attributes['button1Url'] ) ? $attributes['button1Url'] : '#' ); ?>"
 					target="<?php echo esc_attr( '_blank' === $attributes['button1Target'] ? '_blank' : '_self' ); ?>"
 					<?php echo '_blank' === $attributes['button1Target'] ? 'rel="noopener noreferrer"' : ''; ?>
 					style="<?php echo esc_attr( $style_string( $button_style ) ); ?>"
@@ -313,7 +313,7 @@ $close_box     = ! empty( $attributes['boxLinkUrl'] ) ? '</a>' : '';
 			<?php if ( ! empty( $attributes['button2Text'] ) ) : ?>
 				<a
 					class="mbn-image-box__button <?php echo esc_attr( $button_variant_class( $attributes['button2Style'] ) ); ?>"
-					href="<?php echo esc_url( $attributes['button2Url'] ?: '#' ); ?>"
+				href="<?php echo esc_url( ! empty( $attributes['button2Url'] ) ? $attributes['button2Url'] : '#' ); ?>"
 					target="<?php echo esc_attr( '_blank' === $attributes['button2Target'] ? '_blank' : '_self' ); ?>"
 					<?php echo '_blank' === $attributes['button2Target'] ? 'rel="noopener noreferrer"' : ''; ?>
 					style="<?php echo esc_attr( $style_string( $button_style ) ); ?>"

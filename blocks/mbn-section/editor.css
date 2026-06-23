@@ -1,0 +1,37 @@
+/**
+ * MBN Section Block - Editor Styles
+ */
+
+.wp-block-mbn-theme-mbn-section {
+	outline: 2px dotted #cbd5e1;
+	outline-offset: -2px;
+	min-height: 50px;
+	transition: outline-color 0.2s ease;
+}
+
+.wp-block-mbn-theme-mbn-section:hover {
+	outline-color: #94a3b8;
+}
+
+.wp-block-mbn-theme-mbn-section.is-selected {
+	outline-color: #3b82f6;
+	outline-style: solid;
+}
+
+.wp-block-mbn-theme-mbn-section .container {
+	min-height: 50px;
+}
+
+/* Ensure InnerBlocks appender is visible */
+.wp-block-mbn-theme-mbn-section .block-editor-inner-blocks {
+	min-height: 50px;
+}
+
+.wp-block-mbn-theme-mbn-section .block-editor-block-list__layout {
+	min-height: 50px;
+}
+
+/* Style the appender button */
+.wp-block-mbn-theme-mbn-section .block-list-appender {
+	margin: 16px 0;
+}

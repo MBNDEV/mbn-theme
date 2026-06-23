@@ -1,0 +1,34 @@
+/**
+ * MBN Section Block - Frontend Styles
+ */
+
+.mbn-section {
+	display: block;
+	position: relative;
+	overflow: hidden;
+}
+
+.mbn-section .container {
+	display: block;
+	position: relative;
+	z-index: 1;
+}
+
+/* Ensure video backgrounds are properly positioned */
+.mbn-section video {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	pointer-events: none;
+	z-index: -1;
+}
+
+/* Ensure content is above backgrounds */
+.mbn-section > .wp-block-group__inner-container,
+.mbn-section > * {
+	position: relative;
+	z-index: 1;
+}

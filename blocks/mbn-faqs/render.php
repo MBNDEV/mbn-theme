@@ -10,41 +10,41 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /* ── load defaults from block.json ── */
-$schema         = json_decode( file_get_contents( __DIR__ . '/block.json' ), true );
-$default_attrs  = array();
+$schema        = json_decode( file_get_contents( __DIR__ . '/block.json' ), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local file read
+$default_attrs = array();
 if ( isset( $schema['attributes'] ) ) {
-	foreach ( $schema['attributes'] as $key => $cfg ) {
-		$default_attrs[ $key ] = $cfg['default'] ?? '';
-	}
+  foreach ( $schema['attributes'] as $key => $cfg ) {
+      $default_attrs[ $key ] = $cfg['default'] ?? '';
+  }
 }
 $attributes = wp_parse_args( $attributes, $default_attrs );
 
 /* ── helper: build inline style string ── */
 $css = static function ( array $decls ) {
 	$out = '';
-	foreach ( $decls as $prop => $val ) {
-		if ( '' !== $val && null !== $val ) {
-			$out .= $prop . ':' . $val . ';';
-		}
-	}
+  foreach ( $decls as $prop => $val ) {
+    if ( '' !== $val && null !== $val ) {
+        $out .= $prop . ':' . $val . ';';
+    }
+  }
 	return $out;
 };
 
 /* ── wrapper styles ── */
 $wrapper_decls = array(
-	'text-align'        => $attributes['alignment'] ?? '',
-	'width'             => $attributes['containerWidth'] ?? '',
-	'padding-top'       => $attributes['paddingTop'] ?? '',
-	'padding-right'     => $attributes['paddingRight'] ?? '',
-	'padding-bottom'    => $attributes['paddingBottom'] ?? '',
-	'padding-left'      => $attributes['paddingLeft'] ?? '',
-	'margin-top'        => $attributes['marginTop'] ?? '',
-	'margin-right'      => $attributes['marginRight'] ?? '',
-	'margin-bottom'     => $attributes['marginBottom'] ?? '',
-	'margin-left'       => $attributes['marginLeft'] ?? '',
-	'border-radius'     => $attributes['borderRadius'] ?? '',
-	'border-width'      => $attributes['borderWidth'] ?? '',
-	'border-color'      => $attributes['borderColor'] ?? '',
+	'text-align'     => $attributes['alignment'] ?? '',
+	'width'          => $attributes['containerWidth'] ?? '',
+	'padding-top'    => $attributes['paddingTop'] ?? '',
+	'padding-right'  => $attributes['paddingRight'] ?? '',
+	'padding-bottom' => $attributes['paddingBottom'] ?? '',
+	'padding-left'   => $attributes['paddingLeft'] ?? '',
+	'margin-top'     => $attributes['marginTop'] ?? '',
+	'margin-right'   => $attributes['marginRight'] ?? '',
+	'margin-bottom'  => $attributes['marginBottom'] ?? '',
+	'margin-left'    => $attributes['marginLeft'] ?? '',
+	'border-radius'  => $attributes['borderRadius'] ?? '',
+	'border-width'   => $attributes['borderWidth'] ?? '',
+	'border-color'   => $attributes['borderColor'] ?? '',
 );
 
 if ( 'none' !== ( $attributes['borderStyle'] ?? 'none' ) ) {
@@ -109,10 +109,10 @@ $question_tag = in_array( $attributes['questionTag'] ?? 'h3', $allowed_tags, tru
 	: 'h3';
 
 /* ── block ID / custom CSS ── */
-$block_id    = sanitize_html_class( $attributes['blockId'] ?? '' );
-$custom_id   = sanitize_html_class( $attributes['customId'] ?? '' );
+$block_id     = sanitize_html_class( $attributes['blockId'] ?? '' );
+$custom_id    = sanitize_html_class( $attributes['customId'] ?? '' );
 $custom_class = implode( ' ', array_map( 'sanitize_html_class', explode( ' ', trim( $attributes['customClass'] ?? '' ) ) ) );
-$custom_css  = '';
+$custom_css   = '';
 if ( ! empty( $attributes['customCss'] ) && ! empty( $block_id ) ) {
 	$custom_css = str_replace( '{{WRAPPER}}', '.' . $block_id, $attributes['customCss'] );
 }
@@ -130,9 +130,9 @@ $wrapper_attributes = get_block_wrapper_attributes( $extra_attrs );
 $items = is_array( $attributes['items'] ) ? $attributes['items'] : array();
 ?>
 
-<div <?php echo $wrapper_attributes; ?>>
+<div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped by get_block_wrapper_attributes ?>>
 	<?php if ( ! empty( $custom_css ) ) : ?>
-		<style><?php echo wp_strip_all_tags( $custom_css ); ?></style>
+		<style><?php echo esc_html( wp_strip_all_tags( $custom_css ) ); ?></style>
 	<?php endif; ?>
 
 	<?php foreach ( $items as $item ) : ?>
@@ -149,7 +149,7 @@ $items = is_array( $attributes['items'] ) ? $attributes['items'] : array();
 					class="mbn-faqs__question"
 					style="<?php echo esc_attr( $css( $question_decls ) ); ?>"
 				>
-					<?php echo $question; // already sanitized ?>
+					<?php echo wp_kses_post( $question ); ?>
 				</<?php echo esc_html( $question_tag ); ?>>
 			<?php endif; ?>
 
@@ -158,7 +158,7 @@ $items = is_array( $attributes['items'] ) ? $attributes['items'] : array();
 					class="mbn-faqs__answer"
 					style="<?php echo esc_attr( $css( $answer_decls ) ); ?>"
 				>
-					<?php echo $answer; // already sanitized ?>
+					<?php echo wp_kses_post( $answer ); ?>
 				</div>
 			<?php endif; ?>
 		</div>
