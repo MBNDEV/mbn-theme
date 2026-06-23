@@ -50,20 +50,21 @@ function custom_theme_register_block_template_post_type(): void {
   register_post_type(
     'mbn_block_template',
     array(
-		'labels'             => $labels,
-		'public'             => true,
-		'publicly_queryable' => true,
-		'show_ui'            => true,
-		'show_in_menu'       => true,
-		'query_var'          => true,
-		'rewrite'            => array( 'slug' => 'block-template' ),
-		'capability_type'    => 'post',
-		'has_archive'        => false,
-		'hierarchical'       => false,
-		'show_in_rest'       => true,
-		'menu_position'      => 21,
-		'menu_icon'          => 'dashicons-layout',
-		'supports'           => array( 'title', 'editor', 'revisions' ),
+		'labels'              => $labels,
+		'public'              => true,
+		'publicly_queryable'  => false,
+		'exclude_from_search' => true,
+		'show_ui'             => true,
+		'show_in_menu'        => true,
+		'query_var'           => false,
+		'rewrite'             => false,
+		'capability_type'     => 'post',
+		'has_archive'         => false,
+		'hierarchical'        => false,
+		'show_in_rest'        => true,
+		'menu_position'       => 21,
+		'menu_icon'           => 'dashicons-layout',
+		'supports'            => array( 'title', 'editor', 'revisions' ),
     )
   );
 }
@@ -582,3 +583,90 @@ function custom_theme_block_template_row_actions_remove_trash( array $actions, \
 
 add_filter( 'map_meta_cap', 'custom_theme_block_template_map_meta_cap_protect_trash', 10, 4 );
 add_filter( 'post_row_actions', 'custom_theme_block_template_row_actions_remove_trash', 10, 2 );
+
+/**
+ * Exclude block templates from the WordPress core sitemap.
+ *
+ * @param array<string, WP_Post_Type> $post_types Post types included in the sitemap.
+ * @return array<string, WP_Post_Type>
+ */
+function custom_theme_block_template_exclude_from_sitemap( $post_types ) {
+  unset( $post_types['mbn_block_template'] );
+
+  return $post_types;
+}
+
+/**
+ * Prevent block template singles from being indexed by search engines.
+ *
+ * @param array<string, bool|string> $robots Robots directives.
+ * @return array<string, bool|string>
+ */
+function custom_theme_block_template_robots_noindex( $robots ) {
+  if ( is_singular( 'mbn_block_template' ) ) {
+    $robots['noindex']   = true;
+    $robots['nofollow']  = true;
+    $robots['noarchive'] = true;
+  }
+
+  return $robots;
+}
+
+/**
+ * Block anonymous front-end access to block template singles.
+ */
+function custom_theme_block_template_block_public_view() {
+  if ( ! is_singular( 'mbn_block_template' ) ) {
+    return;
+  }
+
+  if ( is_preview() && current_user_can( 'edit_posts' ) ) {
+    return;
+  }
+
+  if ( current_user_can( 'edit_posts' ) ) {
+    return;
+  }
+
+  global $wp_query;
+
+  $wp_query->set_404();
+  status_header( 404 );
+  nocache_headers();
+}
+
+/**
+ * Exclude block templates from Yoast SEO sitemaps when the plugin is active.
+ *
+ * @param bool   $excluded   Whether the post type is excluded.
+ * @param string $post_type  Post type slug.
+ * @return bool
+ */
+function custom_theme_block_template_yoast_exclude_sitemap( $excluded, $post_type ) {
+  if ( 'mbn_block_template' === $post_type ) {
+    return true;
+  }
+
+  return $excluded;
+}
+
+/**
+ * Exclude block templates from Rank Math sitemaps when the plugin is active.
+ *
+ * @param bool   $exclude   Whether the post type is excluded.
+ * @param string $post_type Post type slug.
+ * @return bool
+ */
+function custom_theme_block_template_rank_math_exclude_sitemap( $exclude, $post_type ) {
+  if ( 'mbn_block_template' === $post_type ) {
+    return true;
+  }
+
+  return $exclude;
+}
+
+add_filter( 'wp_sitemaps_post_types', 'custom_theme_block_template_exclude_from_sitemap' );
+add_filter( 'wp_robots', 'custom_theme_block_template_robots_noindex' );
+add_action( 'template_redirect', 'custom_theme_block_template_block_public_view' );
+add_filter( 'wpseo_sitemap_exclude_post_type', 'custom_theme_block_template_yoast_exclude_sitemap', 10, 2 );
+add_filter( 'rank_math/sitemap/exclude_post_type', 'custom_theme_block_template_rank_math_exclude_sitemap', 10, 2 );

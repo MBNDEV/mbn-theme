@@ -103,6 +103,7 @@ function custom_theme_increase_upload_size( $size ) {
 add_filter( 'upload_size_limit', 'custom_theme_increase_upload_size' );
 
 // Load theme components.
+require_once get_theme_file_path( 'inc/includes-block-layout.php' );
 require_once get_theme_file_path( 'block-registry.php' );
 require_once get_theme_file_path( 'tailwind-loader.php' );
 require_once get_theme_file_path( 'optimize.php' );
@@ -118,6 +119,7 @@ require_once get_theme_file_path( 'inc/includes-template-page-sync.php' );     /
 require_once get_theme_file_path( 'inc/includes-theme-block-section.php' );    // Section background utilities.
 require_once get_theme_file_path( 'inc/includes-block-patterns.php' );         // Reusable block patterns.
 require_once get_theme_file_path( 'inc/includes-template-sync-tools.php' );    // Template import/export tools.
+require_once get_theme_file_path( 'inc/includes-template-reuse.php' );         // Remote Block Template reuse tools.
 require_once get_theme_file_path( 'inc/includes-page-sync.php' );              // Page content sync (optional).
 require_once get_theme_file_path( 'inc/includes-nav-menu-sync.php' );          // Nav menu export/import via Git.
 require_once get_theme_file_path( 'inc/includes-animation-helpers.php' );      // Animation data-attribute helpers.

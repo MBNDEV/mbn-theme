@@ -45,6 +45,16 @@ function blgf_register_theme_settings() {
 	register_setting( 'blgf_theme_options', 'blgf_global_html_before_body', array( 'default' => '' ) );
 	register_setting( 'blgf_theme_options', 'blgf_global_html_after_body', array( 'default' => '' ) );
 	register_setting( 'blgf_theme_options', 'blgf_global_html_footer', array( 'default' => '' ) );
+
+	// Remote Block Template reuse sites.
+	register_setting(
+      'blgf_theme_options',
+      'blgf_template_reuse_sites',
+      array(
+		  'default'           => array(),
+		  'sanitize_callback' => 'custom_theme_sanitize_template_reuse_sites',
+	  )
+	);
 }
 add_action( 'admin_init', 'blgf_register_theme_settings' );
 
@@ -154,6 +164,8 @@ function blgf_render_theme_options_page() {
 						<p class="description"><?php esc_html_e( 'When enabled, skips WordPress classic theme stylesheet output on public pages. Disable if you rely on that CSS.', 'mbn-theme' ); ?></p>
 					</td>
 				</tr>
+
+				<?php blgf_render_template_reuse_options_rows(); ?>
 				
 				<!-- Custom HTML Section -->
 				<tr>
@@ -204,9 +216,99 @@ function blgf_render_theme_options_page() {
 	<script>
 	jQuery(document).ready(function($) {
 		$('.blgf-color-picker').wpColorPicker();
+
+		var $sites = $('#blgf-template-reuse-sites');
+		var nextTemplateReuseIndex = $sites.find('[data-template-reuse-row]').length;
+
+		$('#blgf-add-template-reuse-site').on('click', function() {
+			var index = nextTemplateReuseIndex++;
+			var row = [
+				'<div class="blgf-template-reuse-site" data-template-reuse-row>',
+				'<p><label><?php echo esc_js( __( 'Site name', 'mbn-theme' ) ); ?><br><input type="text" name="blgf_template_reuse_sites[' + index + '][site_name]" value="" class="regular-text" /></label></p>',
+				'<p><label><?php echo esc_js( __( 'Home URL', 'mbn-theme' ) ); ?><br><input type="url" name="blgf_template_reuse_sites[' + index + '][home_url]" value="" class="regular-text code" placeholder="https://example.com" /></label></p>',
+				'<p><label><?php echo esc_js( __( 'Credentials', 'mbn-theme' ) ); ?><br><input type="password" name="blgf_template_reuse_sites[' + index + '][application_password]" value="" class="regular-text code" autocomplete="new-password" placeholder="username:application-password" /></label></p>',
+				'<p class="description"><?php echo esc_js( __( 'Use username:application-password, or paste a full Basic/Bearer authorization value. A password token by itself will not authenticate.', 'mbn-theme' ) ); ?></p>',
+				'<p><button type="button" class="button" data-remove-template-reuse-site><?php echo esc_js( __( 'Remove Site', 'mbn-theme' ) ); ?></button></p>',
+				'</div>'
+			].join('');
+
+			$sites.append(row);
+		});
+
+		$sites.on('click', '[data-remove-template-reuse-site]', function() {
+			$(this).closest('[data-template-reuse-row]').remove();
+		});
 	});
 	</script>
 	<?php
+}
+
+/**
+ * Render Remote Template Reuse settings rows.
+ *
+ * @return void
+ */
+function blgf_render_template_reuse_options_rows() {
+	$template_reuse_sites = function_exists( 'custom_theme_get_template_reuse_sites' )
+		? custom_theme_get_template_reuse_sites()
+		: array();
+
+  if ( empty( $template_reuse_sites ) ) {
+      $template_reuse_sites = array(
+		  array(
+			  'site_name'            => '',
+			  'home_url'             => '',
+			  'application_password' => '',
+		  ),
+      );
+  }
+
+  ?>
+	<!-- Template Reuse Section -->
+	<tr>
+		<th colspan="2"><h2><?php esc_html_e( 'Remote Template Reuse', 'mbn-theme' ); ?></h2></th>
+	</tr>
+	<tr>
+		<th scope="row">
+			<label><?php esc_html_e( 'Remote template sites', 'mbn-theme' ); ?></label>
+		</th>
+		<td>
+			<div id="blgf-template-reuse-sites">
+				<?php foreach ( $template_reuse_sites as $index => $site ) : ?>
+					<div class="blgf-template-reuse-site" data-template-reuse-row>
+						<p>
+							<label>
+								<?php esc_html_e( 'Site name', 'mbn-theme' ); ?><br>
+								<input type="text" name="blgf_template_reuse_sites[<?php echo esc_attr( $index ); ?>][site_name]" value="<?php echo esc_attr( $site['site_name'] ?? '' ); ?>" class="regular-text" />
+							</label>
+						</p>
+						<p>
+							<label>
+								<?php esc_html_e( 'Home URL', 'mbn-theme' ); ?><br>
+								<input type="url" name="blgf_template_reuse_sites[<?php echo esc_attr( $index ); ?>][home_url]" value="<?php echo esc_url( $site['home_url'] ?? '' ); ?>" class="regular-text code" placeholder="https://example.com" />
+							</label>
+						</p>
+						<p>
+							<label>
+								<?php esc_html_e( 'Credentials', 'mbn-theme' ); ?><br>
+								<input type="password" name="blgf_template_reuse_sites[<?php echo esc_attr( $index ); ?>][application_password]" value="<?php echo esc_attr( $site['application_password'] ?? '' ); ?>" class="regular-text code" autocomplete="new-password" placeholder="username:application-password" />
+							</label>
+						</p>
+						<p class="description"><?php esc_html_e( 'Use username:application-password, or paste a full Basic/Bearer authorization value. A password token by itself will not authenticate.', 'mbn-theme' ); ?></p>
+						<p>
+							<button type="button" class="button" data-remove-template-reuse-site><?php esc_html_e( 'Remove Site', 'mbn-theme' ); ?></button>
+						</p>
+					</div>
+				<?php endforeach; ?>
+			</div>
+
+			<p>
+				<button type="button" class="button button-secondary" id="blgf-add-template-reuse-site"><?php esc_html_e( 'Add Remote Site', 'mbn-theme' ); ?></button>
+			</p>
+			<p class="description"><?php esc_html_e( 'These sites are shown in the page editor Remote Templates sidebar. Credentials are used only by the server-side proxy request.', 'mbn-theme' ); ?></p>
+		</td>
+	</tr>
+  <?php
 }
 
 /**

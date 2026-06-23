@@ -1,6 +1,5 @@
 node_modules/
 .husky/
-.cursor/
 .vscode/
 build/
 *.hot-update.js
