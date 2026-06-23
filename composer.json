@@ -12,8 +12,8 @@
     }
   },
   "scripts": {
-    "lint": "phpcs",
-    "lint:fix": "phpcbf",
+    "lint": "php ./vendor/bin/phpcs",
+    "lint:fix": "php ./vendor/bin/phpcbf",
     "format": "@lint:fix",
     "lint:security": "@php scripts/security-scan.php",
     "lint:run": [
