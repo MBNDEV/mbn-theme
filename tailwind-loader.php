@@ -101,3 +101,37 @@ function custom_theme_enqueue_tailwind_editor(): void {
   }
 }
 add_action( 'enqueue_block_editor_assets', 'custom_theme_enqueue_tailwind_editor', 5 );
+
+/**
+ * Enqueue theme style.css for custom CSS overrides.
+ *
+ * @return void
+ */
+function custom_theme_enqueue_main_stylesheet(): void {
+  if ( is_admin() ) {
+      return;
+  }
+
+	wp_enqueue_style(
+      'custom-theme-style',
+      get_stylesheet_uri(),
+      array( 'custom-theme-tailwind' ),
+      filemtime( get_stylesheet_directory() . '/style.css' )
+	);
+}
+add_action( 'wp_enqueue_scripts', 'custom_theme_enqueue_main_stylesheet', 10 );
+
+/**
+ * Enqueue theme style.css in the block editor.
+ *
+ * @return void
+ */
+function custom_theme_enqueue_main_stylesheet_editor(): void {
+	wp_enqueue_style(
+      'custom-theme-style-editor',
+      get_stylesheet_uri(),
+      array( 'custom-theme-tailwind' ),
+      filemtime( get_stylesheet_directory() . '/style.css' )
+	);
+}
+add_action( 'enqueue_block_editor_assets', 'custom_theme_enqueue_main_stylesheet_editor', 10 );
