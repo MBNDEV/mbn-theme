@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @return void
  */
-function blacklineguardianfund_register_blocks() {
+function custom_theme_register_blocks() {
 	$blocks_dir = get_theme_file_path( 'build/blocks' );
 
 	// Check if blocks directory exists.
@@ -44,7 +44,41 @@ function blacklineguardianfund_register_blocks() {
     }
   }
 }
-add_action( 'init', 'blacklineguardianfund_register_blocks' );
+add_action( 'init', 'custom_theme_register_blocks' );
+
+/**
+ * Show admin notice with registered blocks (for debugging).
+ * Remove this after confirming blocks are working.
+ */
+function custom_theme_show_blocks_notice() {
+  if ( ! current_user_can( 'manage_options' ) ) {
+      return;
+  }
+
+	$registered_blocks = \WP_Block_Type_Registry::get_instance()->get_all_registered();
+	$theme_blocks      = array_filter(
+      array_keys( $registered_blocks ),
+      function ( $block_name ) {
+		return strpos( $block_name, 'mbn-theme/' ) === 0;
+      }
+    );
+
+  if ( ! empty( $theme_blocks ) ) {
+      echo '<div class="notice notice-success is-dismissible">';
+      echo '<p><strong>Theme Blocks Registered:</strong> ' . count( $theme_blocks ) . '</p>';
+      echo '<ul>';
+    foreach ( $theme_blocks as $block_name ) {
+        echo '<li>' . esc_html( $block_name ) . '</li>';
+    }
+      echo '</ul>';
+      echo '</div>';
+  } else {
+      echo '<div class="notice notice-warning is-dismissible">';
+      echo '<p><strong>Warning:</strong> No theme blocks found. Check debug log.</p>';
+      echo '</div>';
+  }
+}
+add_action( 'admin_notices', 'custom_theme_show_blocks_notice' );
 
 /**
  * Register custom block category for theme blocks.
@@ -52,7 +86,7 @@ add_action( 'init', 'blacklineguardianfund_register_blocks' );
  * @param array $categories Array of block categories.
  * @return array Modified array of block categories.
  */
-function blacklineguardianfund_register_block_category( $categories ) {
+function custom_theme_register_block_category( $categories ) {
 	// Check if category already exists.
   foreach ( $categories as $category ) {
     if ( 'mbn-blocks' === $category['slug'] ) {
@@ -72,25 +106,25 @@ function blacklineguardianfund_register_block_category( $categories ) {
       $categories
 	);
 }
-add_filter( 'block_categories_all', 'blacklineguardianfund_register_block_category' );
+add_filter( 'block_categories_all', 'custom_theme_register_block_category' );
 
 /**
  * Enqueue block editor assets.
  *
  * @return void
  */
-function blacklineguardianfund_enqueue_block_editor_assets() {
+function custom_theme_enqueue_block_editor_assets() {
 	// Enqueue editor styles if needed.
 	// This is where you can add global editor styles that apply to all blocks.
 	$editor_css = get_theme_file_uri( 'assets/css/editor.css' );
 
   if ( file_exists( get_theme_file_path( 'assets/css/editor.css' ) ) ) {
       wp_enqueue_style(
-        'blacklineguardianfund-editor-styles',
+        'custom-theme-editor-styles',
         $editor_css,
         array(),
         wp_get_theme()->get( 'Version' )
       );
   }
 }
-add_action( 'enqueue_block_editor_assets', 'blacklineguardianfund_enqueue_block_editor_assets' );
+add_action( 'enqueue_block_editor_assets', 'custom_theme_enqueue_block_editor_assets' );

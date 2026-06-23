@@ -2,7 +2,7 @@
 /**
  * Nav Menu Sync - Export/Import WordPress navigation menus to/from PHP files.
  *
- * Exports all nav_menu terms + items to template-parts/nav-menus/*.php for Git tracking.
+ * Exports all nav_menu terms + items to template-parts/nav-menus/*.json for Git tracking.
  * On import, resolves post slugs and term slugs to local IDs so menus work across environments.
  *
  * Workflow:
@@ -207,27 +207,16 @@ function custom_theme_nav_resolve_menu_locations( WP_Term $menu ): array {
  * @param WP_Term $menu          Nav menu term.
  * @param array   $exported_data Data array to serialize.
  * @return string
+ * @throws Exception If JSON encoding fails.
  */
 function custom_theme_nav_build_export_file_content( WP_Term $menu, array $exported_data ): string {
-	// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export -- used for file serialization, not debugging.
-	$exported_array = var_export( $exported_data, true );
+	$encoded = wp_json_encode( $exported_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 
-	$content  = "<?php\n";
-	$content .= "/**\n";
-	$content .= " * Nav Menu: {$menu->name}\n";
-	$content .= " *\n";
-	$content .= " * Auto-exported by Theme Nav Menu Sync.\n";
-	$content .= " * Edit menus in Appearance > Menus, then re-export via\n";
-	$content .= " * Block Templates > Nav Menu Sync.\n";
-	$content .= " *\n";
-	$content .= " * NOTE: Post/page items are stored as slugs for portability.\n";
-	$content .= " * Custom links: use relative URLs (e.g. /contact) to stay portable.\n";
-	$content .= " *\n";
-	$content .= " * @package CustomTheme\n";
-	$content .= " */\n\n";
-	$content .= 'return ' . $exported_array . ";\n";
+  if ( false === $encoded ) {
+      throw new Exception( sprintf( 'Failed to encode menu "%s" as JSON.', esc_html( $menu->name ) ) );
+  }
 
-	return $content;
+	return $encoded;
 }
 
 /**
@@ -283,7 +272,7 @@ function custom_theme_export_nav_menu( WP_Term $menu ): string {
 
 	custom_theme_nav_menus_ensure_export_dir();
 
-	$file_path = custom_theme_nav_menus_export_dir() . '/' . sanitize_file_name( $menu->slug ) . '.php';
+	$file_path = custom_theme_nav_menus_export_dir() . '/' . sanitize_file_name( $menu->slug ) . '.json';
 
 	custom_theme_nav_write_file( $file_path, $file_content );
 
@@ -524,6 +513,84 @@ function custom_theme_nav_clear_menu_items( int $menu_id ): void {
 }
 
 /**
+ * Snapshot existing menu items so they can be restored on import failure.
+ *
+ * @param int $menu_id Menu term_id.
+ * @return array Snapshot of menu item args, each with _original_id and _original_parent_id.
+ */
+function custom_theme_nav_snapshot_items( int $menu_id ): array {
+	$items = wp_get_nav_menu_items( $menu_id, array( 'post_status' => 'any' ) );
+  if ( ! is_array( $items ) ) {
+      return array();
+  }
+
+	$snapshot = array();
+
+  foreach ( $items as $item ) {
+      $snapshot[] = array(
+		  'menu-item-title'       => $item->title,
+		  'menu-item-url'         => $item->url,
+		  'menu-item-status'      => 'publish',
+		  'menu-item-position'    => $item->menu_order,
+		  'menu-item-type'        => $item->type,
+		  'menu-item-object'      => $item->object,
+		  'menu-item-object-id'   => $item->object_id,
+		  'menu-item-parent-id'   => 0,
+		  'menu-item-target'      => $item->target,
+		  'menu-item-classes'     => is_array( $item->classes ) ? implode( ' ', $item->classes ) : '',
+		  'menu-item-attr-title'  => $item->attr_title,
+		  'menu-item-description' => $item->description,
+		  '_original_id'          => (int) $item->ID,
+		  '_original_parent_id'   => (int) $item->menu_item_parent,
+	  );
+  }
+
+	return $snapshot;
+}
+
+/**
+ * Restore menu items from a snapshot taken before a failed import.
+ *
+ * @param int   $menu_id  Menu term_id.
+ * @param array $snapshot Snapshot from custom_theme_nav_snapshot_items().
+ * @return void
+ */
+function custom_theme_nav_restore_items_from_snapshot( int $menu_id, array $snapshot ): void {
+  if ( empty( $snapshot ) ) {
+      return;
+  }
+
+	$id_map = array(); // old_id => new_id
+
+  // First pass: re-create all items flat (parent relationships wired in second pass).
+  foreach ( $snapshot as $item ) {
+      $args = $item;
+      unset( $args['_original_id'], $args['_original_parent_id'] );
+      $new_id = wp_update_nav_menu_item( $menu_id, 0, $args );
+
+    if ( ! is_wp_error( $new_id ) ) {
+        $id_map[ $item['_original_id'] ] = (int) $new_id;
+    }
+  }
+
+  // Second pass: restore parent/child relationships.
+  foreach ( $snapshot as $item ) {
+      $orig_parent = $item['_original_parent_id'];
+
+    if ( $orig_parent > 0 && isset( $id_map[ $orig_parent ], $id_map[ $item['_original_id'] ] ) ) {
+        wp_update_nav_menu_item(
+          $menu_id,
+          $id_map[ $item['_original_id'] ],
+          array(
+			  'menu-item-parent-id' => $id_map[ $orig_parent ],
+			  'menu-item-status'    => 'publish',
+		  )
+        );
+    }
+  }
+}
+
+/**
  * First-pass insert: create all items and return an array-index to new post ID map.
  *
  * @param int   $menu_id Menu term_id.
@@ -594,50 +661,130 @@ function custom_theme_nav_assign_locations( int $menu_id, array $locations ): vo
 }
 
 /**
+ * Normalize nav import mode to a supported value.
+ *
+ * @param string $mode Raw import mode.
+ * @return string One of: skip_existing, update_existing, create_copy.
+ */
+function custom_theme_nav_normalize_import_mode( string $mode ): string {
+	$normalized = sanitize_key( $mode );
+	$allowed    = array( 'skip_existing', 'update_existing', 'create_copy' );
+
+  if ( ! in_array( $normalized, $allowed, true ) ) {
+      return 'skip_existing';
+  }
+
+	return $normalized;
+}
+
+/**
+ * Generate a unique menu slug for imported copies.
+ *
+ * @param string $base_slug Base menu slug.
+ * @return string Unique menu slug.
+ */
+function custom_theme_nav_generate_copy_slug( string $base_slug ): string {
+	$base_slug = sanitize_title( $base_slug );
+	$candidate = $base_slug . '-imported-copy';
+	$index     = 2;
+
+  while ( wp_get_nav_menu_object( $candidate ) instanceof WP_Term ) {
+      $candidate = $base_slug . '-imported-copy-' . $index;
+      ++$index;
+  }
+
+	return $candidate;
+}
+
+/**
  * Import a single nav menu from a deserialized data array.
  *
  * Existing items are cleared before re-importing so the result always
  * matches the file exactly (no stale items left behind).
  *
- * @param array $data Data from a nav menu PHP file.
- * @return array{ created: bool }
+ * @param array  $data Data from a nav menu PHP file.
+ * @param string $import_mode Import mode: skip_existing, update_existing, create_copy.
+ * @return array{ created: bool, action: string }
  * @throws Exception On failure.
  */
-function custom_theme_import_single_nav_menu( array $data ): array {
-	$name  = sanitize_text_field( $data['name'] );
-	$slug  = sanitize_title( $data['slug'] );
-	$items = is_array( $data['items'] ) ? $data['items'] : array();
-	$locs  = is_array( $data['locations'] ?? null ) ? $data['locations'] : array();
+function custom_theme_import_single_nav_menu( array $data, string $import_mode = 'skip_existing' ): array {
+	$name        = sanitize_text_field( $data['name'] );
+	$slug        = sanitize_title( $data['slug'] );
+	$items       = is_array( $data['items'] ) ? $data['items'] : array();
+	$locs        = is_array( $data['locations'] ?? null ) ? $data['locations'] : array();
+	$import_mode = custom_theme_nav_normalize_import_mode( $import_mode );
+
+	$existing_menu = wp_get_nav_menu_object( $slug );
+	$exists        = $existing_menu instanceof WP_Term;
+
+  if ( $exists && 'skip_existing' === $import_mode ) {
+      return array(
+          'created' => false,
+          'action'  => 'skipped',
+      );
+  }
+
+  if ( $exists && 'create_copy' === $import_mode ) {
+      $slug = custom_theme_nav_generate_copy_slug( $slug );
+      $name = sprintf( '%s (Imported Copy)', $name );
+  }
 
 	$created = ! ( wp_get_nav_menu_object( $slug ) instanceof WP_Term );
 	$menu_id = custom_theme_nav_get_or_create_menu( $name, $slug );
+
+	// Snapshot existing items before the destructive clear so we can restore on failure.
+	$backup = custom_theme_nav_snapshot_items( $menu_id );
 
 	custom_theme_nav_clear_menu_items( $menu_id );
 
 	$new_ids = custom_theme_nav_insert_items_first_pass( $menu_id, $items );
 
+	// Rollback: if items were expected but none were inserted, restore backup and abort.
+  if ( ! empty( $items ) && empty( $new_ids ) ) {
+      custom_theme_nav_restore_items_from_snapshot( $menu_id, $backup );
+      throw new Exception(
+        sprintf(
+              // translators: %s is the menu slug.
+          esc_html__( 'Import failed for menu "%s": no items were inserted. Rolled back to previous state.', 'mbn-theme' ),
+          esc_html( $slug )
+        )
+      );
+  }
+
 	custom_theme_nav_wire_parent_relationships( $menu_id, $items, $new_ids );
 
 	custom_theme_nav_assign_locations( $menu_id, $locs );
 
-	return array( 'created' => $created );
+  if ( $exists && 'create_copy' === $import_mode ) {
+      return array(
+          'created' => true,
+          'action'  => 'copied',
+      );
+  }
+
+	return array(
+		'created' => $created,
+		'action'  => $created ? 'created' : 'updated',
+	);
 }
 
 /**
  * Import all nav menus from PHP files in the export directory.
  *
- * @param array $selected_files Optional array of filenames to import. Empty = all files.
- * @return array{ created: int, updated: int, errors: string[] }
+ * @param array  $selected_files Optional array of filenames to import. Empty = all files.
+ * @param string $import_mode    Import mode: skip_existing, update_existing, create_copy.
+ * @return array{ created: int, updated: int, skipped: int, copied: int, errors: string[] }
  * @throws Exception If directory is missing or has no files.
  */
-function custom_theme_import_all_nav_menus( array $selected_files = array() ): array {
-	$dir = custom_theme_nav_menus_export_dir();
+function custom_theme_import_all_nav_menus( array $selected_files = array(), string $import_mode = 'skip_existing' ): array { // phpcs:ignore Generic.Metrics.CyclomaticComplexity.TooHigh
+	$dir         = custom_theme_nav_menus_export_dir();
+	$import_mode = custom_theme_nav_normalize_import_mode( $import_mode );
 
   if ( ! is_dir( $dir ) ) {
       throw new Exception( 'Nav menus directory not found. Export menus first.' );
   }
 
-	$all_files = glob( $dir . '/*.php' );
+	$all_files = glob( $dir . '/*.json' );
   if ( empty( $all_files ) ) {
       throw new Exception( sprintf( 'No nav menu files found in %s. Export first and commit to Git.', esc_html( $dir ) ) );
   }
@@ -660,17 +807,27 @@ function custom_theme_import_all_nav_menus( array $selected_files = array() ): a
 
 	$created = 0;
 	$updated = 0;
+	$skipped = 0;
+	$copied  = 0;
 	$errors  = array();
 
   foreach ( $files as $file ) {
     try {
         $filename = basename( $file );
-        $data     = include $file; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_include
+        $raw      = file_get_contents( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+        $data     = $raw ? json_decode( $raw, true ) : null;
+      if ( null === $data || JSON_ERROR_NONE !== json_last_error() ) {
+          throw new Exception( sprintf( 'Invalid JSON in file: %s', esc_html( $filename ) ) );
+      }
         custom_theme_validate_nav_menu_file_data( $data, $filename );
-        $result = custom_theme_import_single_nav_menu( $data );
+				$result = custom_theme_import_single_nav_menu( $data, $import_mode );
 
-      if ( $result['created'] ) {
-        ++$created;
+      if ( isset( $result['action'] ) && 'skipped' === $result['action'] ) {
+          ++$skipped;
+      } elseif ( isset( $result['action'] ) && 'copied' === $result['action'] ) {
+          ++$copied;
+      } elseif ( $result['created'] ) {
+          ++$created;
       } else {
           ++$updated;
       }
@@ -682,6 +839,8 @@ function custom_theme_import_all_nav_menus( array $selected_files = array() ): a
 	return array(
 		'created' => $created,
 		'updated' => $updated,
+		'skipped' => $skipped,
+		'copied'  => $copied,
 		'errors'  => $errors,
 	);
 }
@@ -723,6 +882,16 @@ function custom_theme_nav_build_import_message( array $result ): string {
       $result['created'],
       $result['updated']
 	);
+
+  if ( ! empty( $result['copied'] ) ) {
+      // translators: %d is number of menus created as imported copies.
+          $message .= sprintf( ' | ' . __( 'Copied: %d', 'mbn-theme' ), (int) $result['copied'] );
+  }
+
+  if ( ! empty( $result['skipped'] ) ) {
+      // translators: %d is number of existing menus skipped.
+          $message .= sprintf( ' | ' . __( 'Skipped existing: %d', 'mbn-theme' ), (int) $result['skipped'] );
+  }
 
   if ( ! empty( $result['errors'] ) ) {
       $message .= ' | Errors: ' . implode( '; ', array_map( 'esc_html', $result['errors'] ) );
@@ -766,10 +935,11 @@ function custom_theme_handle_export_action( array $menu_slugs ): void {
 /**
  * Handle an import form submission.
  *
- * @param array $selected_files Menu filenames to import (already sanitized).
+ * @param array  $selected_files Menu filenames to import (already sanitized).
+ * @param string $import_mode    Import mode: skip_existing, update_existing, create_copy.
  * @return void
  */
-function custom_theme_handle_import_action( array $selected_files ): void {
+function custom_theme_handle_import_action( array $selected_files, string $import_mode = 'skip_existing' ): void {
   try {
     if ( empty( $selected_files ) ) {
         add_settings_error(
@@ -781,7 +951,7 @@ function custom_theme_handle_import_action( array $selected_files ): void {
         return;
     }
 
-      $result  = custom_theme_import_all_nav_menus( $selected_files );
+	$result    = custom_theme_import_all_nav_menus( $selected_files, $import_mode );
       $message = custom_theme_nav_build_import_message( $result );
       $type    = empty( $result['errors'] ) ? 'updated' : 'warning';
       add_settings_error( 'custom_theme_nav_sync', 'import_success', $message, $type );
@@ -800,7 +970,7 @@ function custom_theme_handle_import_action( array $selected_files ): void {
  *
  * @return void
  */
-function custom_theme_handle_nav_menu_sync_actions(): void {
+function custom_theme_handle_nav_menu_sync_actions(): void { // phpcs:ignore Generic.Metrics.CyclomaticComplexity.TooHigh
   if ( ! isset( $_POST['custom_theme_nav_sync_action'] ) ) {
       return;
   }
@@ -817,8 +987,23 @@ function custom_theme_handle_nav_menu_sync_actions(): void {
       $menu_slugs = isset( $_POST['menu_slugs'] ) ? array_map( 'sanitize_title', (array) $_POST['menu_slugs'] ) : array();
       custom_theme_handle_export_action( $menu_slugs );
   } elseif ( 'import_menus' === $action ) {
-      $selected_files = isset( $_POST['menu_files'] ) ? array_map( 'sanitize_file_name', (array) $_POST['menu_files'] ) : array();
-      custom_theme_handle_import_action( $selected_files );
+      $selected_files      = isset( $_POST['menu_files'] ) ? array_map( 'sanitize_file_name', (array) $_POST['menu_files'] ) : array();
+			$import_mode   = isset( $_POST['import_mode'] )
+				? custom_theme_nav_normalize_import_mode( sanitize_text_field( wp_unslash( $_POST['import_mode'] ) ) )
+				: 'skip_existing';
+			$sync_password = isset( $_POST['sync_password'] )
+				? (string) wp_unslash( $_POST['sync_password'] )
+				: '';
+
+    if ( ! custom_theme_verify_sync_password( $sync_password ) ) {
+        $message = '' === custom_theme_get_sync_password()
+            ? esc_html__( 'Import blocked: sync password is not configured. Define CUSTOM_THEME_SYNC_PASSWORD in wp-config.php or environment.', 'mbn-theme' )
+            : esc_html__( 'Import blocked: invalid sync password.', 'mbn-theme' );
+
+        add_settings_error( 'custom_theme_nav_sync', 'invalid_sync_password', $message, 'error' );
+        return;
+    }
+			custom_theme_handle_import_action( $selected_files, $import_mode );
   }
 }
 add_action( 'admin_init', 'custom_theme_handle_nav_menu_sync_actions' );
@@ -864,7 +1049,7 @@ function custom_theme_render_nav_menu_table_rows( array $menus, array $assigned,
       }
     }
 
-      $file_path = $export_dir . '/' . sanitize_file_name( $menu->slug ) . '.php';
+      $file_path = $export_dir . '/' . sanitize_file_name( $menu->slug ) . '.json';
       $has_file  = file_exists( $file_path );
     ?>
 		<tr>
@@ -891,7 +1076,7 @@ function custom_theme_render_nav_menu_table_rows( array $menus, array $assigned,
 			</td>
 			<td>
               <?php if ( $has_file ) : ?>
-					<span style="color:#46b450;">&#10003; <code><?php echo esc_html( $menu->slug ); ?>.php</code></span>
+					<span style="color:#46b450;">&#10003; <code><?php echo esc_html( $menu->slug ); ?>.json</code></span>
 				<?php else : ?>
 					<span style="color:#dba617;">&#9888; <?php esc_html_e( 'Not yet exported', 'mbn-theme' ); ?></span>
 				<?php endif; ?>
@@ -906,95 +1091,82 @@ function custom_theme_render_nav_menu_table_rows( array $menus, array $assigned,
  *
  * @return void
  */
-function custom_theme_render_nav_menu_sync_page(): void {
+function custom_theme_render_nav_menu_sync_page(): void { // phpcs:ignore Generic.Metrics.CyclomaticComplexity.TooHigh
 	$menus          = wp_get_nav_menus();
 	$registered     = get_registered_nav_menus();
 	$assigned       = get_nav_menu_locations();
 	$export_dir     = custom_theme_nav_menus_export_dir();
-	$glob_result    = is_dir( $export_dir ) ? glob( $export_dir . '/*.php' ) : array();
+	$glob_result    = is_dir( $export_dir ) ? glob( $export_dir . '/*.json' ) : array();
 	$exported_files = is_array( $glob_result ) ? $glob_result : array();
   ?>
 	<div class="wrap">
 		<h1><?php esc_html_e( 'Nav Menu Sync', 'mbn-theme' ); ?></h1>
-		<p><?php esc_html_e( 'Export navigation menus to PHP files for Git tracking, then import on staging/production.', 'mbn-theme' ); ?></p>
+		<p><?php esc_html_e( 'Export and import navigation menus using JSON files in template-parts/nav-menus/.', 'mbn-theme' ); ?></p>
 
 		<?php settings_errors( 'custom_theme_nav_sync' ); ?>
 
-		<!-- Registered menus status table -->
-		<div class="card" style="max-width:860px;">
-			<h2><?php esc_html_e( 'Current Menus', 'mbn-theme' ); ?></h2>
-			<?php if ( empty( $menus ) ) : ?>
-				<p><em><?php esc_html_e( 'No menus found. Create menus via Appearance > Menus first.', 'mbn-theme' ); ?></em></p>
-			<?php else : ?>
-				<table class="widefat striped" style="margin-top:10px;">
-					<thead>
-						<tr>
-							<th style="width:40px;">
-								<input type="checkbox" id="select-all-menus" title="Select all">
-							</th>
-							<th><?php esc_html_e( 'Menu Name', 'mbn-theme' ); ?></th>
-							<th><?php esc_html_e( 'Slug', 'mbn-theme' ); ?></th>
-							<th><?php esc_html_e( 'Items', 'mbn-theme' ); ?></th>
-							<th><?php esc_html_e( 'Theme Location', 'mbn-theme' ); ?></th>
-							<th><?php esc_html_e( 'Exported File', 'mbn-theme' ); ?></th>
-						</tr>
-					</thead>
-					<tbody>
-						<?php custom_theme_render_nav_menu_table_rows( $menus, $assigned, $registered, $export_dir ); ?>
-					</tbody>
-				</table>
-				<script>
-				document.getElementById( 'select-all-menus' ).addEventListener( 'change', function () {
-					document.querySelectorAll( 'input[name="menu_slugs[]"]' ).forEach( function ( cb ) {
-						cb.checked = this.checked;
-					}, this );
-				} );
-				</script>
-			<?php endif; ?>
-		</div>
-
-		<!-- Export card -->
-		<div class="card" style="max-width:860px;margin-top:20px;">
-			<h2>&#x1F4E4; <?php esc_html_e( 'Export Menus to Files', 'mbn-theme' ); ?></h2>
-			<p>
-				<?php esc_html_e( 'Select menus above to export to', 'mbn-theme' ); ?>
-				<code>template-parts/nav-menus/{slug}.php</code>.
-				<?php esc_html_e( 'Commit these files to Git and push.', 'mbn-theme' ); ?>
-			</p>
-			<?php if ( empty( $menus ) ) : ?>
-				<p><em><?php esc_html_e( 'No menus found. Create menus via Appearance > Menus first.', 'mbn-theme' ); ?></em></p>
-			<?php else : ?>
-				<p><strong><?php esc_html_e( 'What gets exported:', 'mbn-theme' ); ?></strong></p>
-				<ul style="margin-left:20px;">
-					<li>&#10003; <?php esc_html_e( 'Menu name and slug', 'mbn-theme' ); ?></li>
-					<li>&#10003; <?php esc_html_e( 'All menu items — title, URL, target, CSS classes, description', 'mbn-theme' ); ?></li>
-					<li>&#10003; <?php esc_html_e( 'Dropdown (parent/child) relationships stored as relative array indices — no database IDs', 'mbn-theme' ); ?></li>
-					<li>&#10003; <?php esc_html_e( 'Post / page links stored as slugs, resolved to the correct local URL on import', 'mbn-theme' ); ?></li>
-					<li>&#10003; <?php esc_html_e( 'Theme location assignments (primary-menu, footer-menu, etc.)', 'mbn-theme' ); ?></li>
-				</ul>
-				<div style="background:#e7f3ff;border-left:4px solid #2271b1;padding:10px 15px;margin:15px 0;">
-					<strong><?php esc_html_e( 'Tip: Custom links', 'mbn-theme' ); ?></strong>
-					<p style="margin:5px 0;">
-						<?php esc_html_e( 'Use relative URLs (e.g. /contact, /about) for custom links so they work on every environment without editing.', 'mbn-theme' ); ?>
-					</p>
+		<?php if ( ! empty( $menus ) ) : ?>
+			<!-- Export menus form - wraps both menu table and export button -->
+			<form method="post">
+				<?php wp_nonce_field( 'custom_theme_nav_sync', 'custom_theme_nav_sync_nonce' ); ?>
+				<input type="hidden" name="custom_theme_nav_sync_action" value="export_menus">
+				
+				<!-- Registered menus status table -->
+				<div class="card" style="max-width:860px;">
+					<h2><?php esc_html_e( 'Current Menus', 'mbn-theme' ); ?></h2>
+					<table class="widefat striped" style="margin-top:10px;">
+						<thead>
+							<tr>
+								<th style="width:40px;">
+									<input type="checkbox" id="select-all-menus" title="Select all">
+								</th>
+								<th><?php esc_html_e( 'Menu Name', 'mbn-theme' ); ?></th>
+								<th><?php esc_html_e( 'Slug', 'mbn-theme' ); ?></th>
+								<th><?php esc_html_e( 'Items', 'mbn-theme' ); ?></th>
+								<th><?php esc_html_e( 'Theme Location', 'mbn-theme' ); ?></th>
+								<th><?php esc_html_e( 'Exported File', 'mbn-theme' ); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php custom_theme_render_nav_menu_table_rows( $menus, $assigned, $registered, $export_dir ); ?>
+						</tbody>
+					</table>
+					<script>
+					document.getElementById( 'select-all-menus' ).addEventListener( 'change', function () {
+						document.querySelectorAll( 'input[name="menu_slugs[]"]' ).forEach( function ( cb ) {
+							cb.checked = this.checked;
+						}, this );
+					} );
+					</script>
 				</div>
-				<form method="post" style="margin-top:15px;">
-					<?php wp_nonce_field( 'custom_theme_nav_sync', 'custom_theme_nav_sync_nonce' ); ?>
-					<input type="hidden" name="custom_theme_nav_sync_action" value="export_menus">
-					<button type="submit" class="button button-secondary">
+
+				<!-- Export card -->
+				<div class="card" style="max-width:860px;margin-top:20px;">
+					<h2>&#x1F4E4; <?php esc_html_e( 'Export Menus to Files', 'mbn-theme' ); ?></h2>
+					<p>
+						<?php esc_html_e( 'Select menus above to export to', 'mbn-theme' ); ?>
+						<code>template-parts/nav-menus/{slug}.json</code>.
+						<?php esc_html_e( 'Use these files for version control and deployments.', 'mbn-theme' ); ?>
+					</p>
+					<button type="submit" class="button button-secondary" style="margin-top:15px;">
 						&#x1F4E4; <?php esc_html_e( 'Export Selected Menus to Files', 'mbn-theme' ); ?>
 					</button>
-				</form>
-			<?php endif; ?>
-		</div>
+				</div>
+			</form>
+		<?php else : ?>
+			<div class="card" style="max-width:860px;">
+				<h2><?php esc_html_e( 'Current Menus', 'mbn-theme' ); ?></h2>
+				<p><em><?php esc_html_e( 'No menus found. Create menus via Appearance > Menus first.', 'mbn-theme' ); ?></em></p>
+			</div>
+		<?php endif; ?>
 
 		<!-- Import card -->
 		<div class="card" style="max-width:860px;margin-top:20px;">
 			<h2>&#x1F4E5; <?php esc_html_e( 'Import Menus from Files', 'mbn-theme' ); ?></h2>
 			<p>
 				<?php esc_html_e( 'Select menu files from', 'mbn-theme' ); ?>
-				<code>template-parts/nav-menus/*.php</code>
-				<?php esc_html_e( 'to import. This will create or update the matching menus.', 'mbn-theme' ); ?>
+				<code>template-parts/nav-menus/*.json</code>
+				<?php esc_html_e( 'to import. Import Mode controls whether existing menu slugs are skipped, updated, or copied.', 'mbn-theme' ); ?>
 			</p>
 			<?php if ( empty( $exported_files ) ) : ?>
 				<p><em style="color:#d63638;">
@@ -1003,11 +1175,33 @@ function custom_theme_render_nav_menu_sync_page(): void {
 			<?php else : ?>
 				<p>
 					<strong style="color:#d63638;">&#9888; <?php esc_html_e( 'Warning:', 'mbn-theme' ); ?></strong>
-					<?php esc_html_e( 'All existing items in each selected menu will be cleared and re-created from the file. Menu assignments to theme locations will be applied.', 'mbn-theme' ); ?>
+					<?php esc_html_e( 'Clear-and-rebuild only happens when you choose Update existing menus. Skip and Create copy modes do not overwrite matching menu slugs.', 'mbn-theme' ); ?>
 				</p>
 				<form method="post" style="margin-top:15px;">
 					<?php wp_nonce_field( 'custom_theme_nav_sync', 'custom_theme_nav_sync_nonce' ); ?>
 					<input type="hidden" name="custom_theme_nav_sync_action" value="import_menus">
+					<div style="background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:12px 14px;margin:0 0 15px 0;">
+						<label for="menu-import-mode" style="display:block;font-weight:600;margin-bottom:6px;">
+							<?php esc_html_e( 'Import Mode', 'mbn-theme' ); ?>
+						</label>
+						<select id="menu-import-mode" name="import_mode" style="min-width:280px;">
+							<option value="skip_existing" selected><?php esc_html_e( 'Skip existing menus (safe)', 'mbn-theme' ); ?></option>
+							<option value="update_existing"><?php esc_html_e( 'Update existing menus', 'mbn-theme' ); ?></option>
+							<option value="create_copy"><?php esc_html_e( 'Create imported copies for existing menus', 'mbn-theme' ); ?></option>
+						</select>
+						<p style="margin:6px 0 0;color:#646970;">
+							<?php esc_html_e( 'Choose how to handle files whose menu slug already exists in the database.', 'mbn-theme' ); ?>
+						</p>
+						<?php if ( custom_theme_is_sync_password_required() ) : ?>
+							<label for="menu-sync-password" style="display:block;font-weight:600;margin:10px 0 6px;">
+								<?php esc_html_e( 'Sync Password', 'mbn-theme' ); ?>
+							</label>
+							<input type="password" id="menu-sync-password" name="sync_password" autocomplete="current-password" style="min-width:280px;" required>
+							<p style="margin:6px 0 0;color:#646970;">
+								<?php esc_html_e( 'Required on production before import runs.', 'mbn-theme' ); ?>
+							</p>
+						<?php endif; ?>
+					</div>
 					
 					<table class="widefat" style="margin-bottom:15px;">
 						<thead>
@@ -1023,10 +1217,14 @@ function custom_theme_render_nav_menu_sync_page(): void {
 						<tbody>
 							<?php foreach ( $exported_files as $f ) : ?>
 								<?php
-								$data     = include $f; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_include
 								$filename = basename( $f );
-								$slug     = isset( $data['slug'] ) ? $data['slug'] : pathinfo( $filename, PATHINFO_FILENAME );
-								$exists   = wp_get_nav_menu_object( $slug ) instanceof WP_Term;
+								$_raw     = file_get_contents( $f ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+								$data     = ( false !== $_raw ) ? json_decode( $_raw, true ) : null;
+								if ( null === $data || JSON_ERROR_NONE !== json_last_error() ) {
+									continue;
+								}
+								$slug   = isset( $data['slug'] ) ? $data['slug'] : pathinfo( $filename, PATHINFO_FILENAME );
+								$exists = wp_get_nav_menu_object( $slug ) instanceof WP_Term;
 								?>
 								<tr>
 									<td>
@@ -1061,40 +1259,6 @@ function custom_theme_render_nav_menu_sync_page(): void {
 			<?php endif; ?>
 		</div>
 
-		<!-- Workflow guide -->
-		<div class="card" style="max-width:860px;margin-top:20px;background:#f0f6fc;border-left:4px solid #0073aa;">
-			<h2>&#x2139;&#xFE0F; <?php esc_html_e( 'Git Workflow', 'mbn-theme' ); ?></h2>
-
-			<h3><?php esc_html_e( 'Local Development', 'mbn-theme' ); ?></h3>
-			<ol>
-				<li><?php esc_html_e( 'Create or edit menus in Appearance > Menus', 'mbn-theme' ); ?></li>
-				<li><?php esc_html_e( 'Click "Export All Menus to Files" above', 'mbn-theme' ); ?></li>
-				<li>
-					<?php esc_html_e( 'Commit the generated files to Git:', 'mbn-theme' ); ?>
-					<code>template-parts/nav-menus/*.php</code>
-				</li>
-				<li><?php esc_html_e( 'Push to GitHub', 'mbn-theme' ); ?></li>
-			</ol>
-
-			<h3><?php esc_html_e( 'Staging / Production', 'mbn-theme' ); ?></h3>
-			<ol>
-				<li><?php esc_html_e( 'Pull latest code from Git', 'mbn-theme' ); ?></li>
-				<li><?php esc_html_e( 'Go to Block Templates > Nav Menu Sync', 'mbn-theme' ); ?></li>
-				<li><?php esc_html_e( 'Click "Import All Menus from Files"', 'mbn-theme' ); ?></li>
-			</ol>
-
-			<h3><?php esc_html_e( 'Notes', 'mbn-theme' ); ?></h3>
-			<ul style="margin-left:20px;">
-				<li>
-					<strong><?php esc_html_e( 'Post/page links', 'mbn-theme' ); ?>:</strong>
-					<?php esc_html_e( 'Stored as slugs and resolved to the correct local URL on import. If a page does not exist on the target environment yet, run the Page Content Sync import first.', 'mbn-theme' ); ?>
-				</li>
-				<li>
-					<strong><?php esc_html_e( 'Navigation block vs classic menus', 'mbn-theme' ); ?>:</strong>
-					<?php esc_html_e( 'This tool manages classic WordPress menus (registered via register_nav_menus). If the header uses a Navigation block with an inline structure, the block template sync already covers it.', 'mbn-theme' ); ?>
-				</li>
-			</ul>
-		</div>
 	</div>
 	<?php
 }

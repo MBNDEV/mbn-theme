@@ -3,7 +3,7 @@
  * Native WordPress Post Meta Boxes (replaces Carbon Fields PostHtmlInjectionContainer)
  * Custom HTML injection for individual posts and pages
  *
- * @package BlackLineGuardianFund
+ * @package CustomTheme
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
