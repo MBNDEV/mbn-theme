@@ -12,6 +12,15 @@
 - **No attribute styling.** Never use `style="…"`. Style with Tailwind utilities, the
   design-system classes and `--mbn-*` variables; if custom CSS is unavoidable, put it
   in a `<style>` tag inside the block's `render.php` (scoped by an `mbn-` class).
+- **Runtime-built arbitrary values.** Tailwind only compiles an arbitrary value
+  (`bg-[#e50b07]`, `h-[3px]`, `opacity-[0.4]`) when it sees the exact literal in a
+  scanned file, and safelist *regex patterns can't match arbitrary values*. When a
+  `render.php` concatenates a class from a **dynamic** value (a hex, a px size, an
+  opacity), the bounded ranges + the design palette are enumerated as explicit
+  safelist strings by `mbnArbitrarySafelist` in `tailwind.config.js` — add a new hex to
+  `MBN_ARBITRARY_PALETTE` (or widen a range) so it compiles automatically; never rely on
+  a pattern. Literal arbitrary classes (e.g. `shadow-[0px_3px_0px_#d3110e]`) need no
+  safelist because they appear verbatim in source.
 - Match the design's **font weights**, border styling, vectors and column ratios
   (create a custom column block for ratios like 1/3 the existing columns can't express).
 - **One shared container:** header, footer and post_content use the same content
@@ -48,17 +57,23 @@
   its markup in `<div className="mbn-control" style={{ marginBottom: 24 }}>` (the shared
   `MediaPicker` and layout media buttons already do). Example: the "Select Background
   Image" picker sits above the next field with a clear gap.
-- **Background images are `<img>`, never CSS `background-image:url()`.** A CSS background
-  can't emit a `srcset`, so render full-bleed backgrounds as an absolutely-positioned
-  `<img class="… pointer-events-none absolute inset-0 h-full w-full object-cover object-center">`
-  (the layout blocks use `mbn_layout_bg_image_html()`) — responsive, decorative
-  (`alt=""`, `aria-hidden`), and **click-through (`pointer-events-none`)** so it never
-  intercepts clicks. The editor preview must render the same `<img>` for parity.
-- **LCP image.** Every image/background block has an **"LCP (above the fold)" toggle**
-  (shared `LcpControl` → `lcp` attribute). When on, the block's background (or
-  first/largest) image is rendered with `fetchpriority="high"` + eager loading via
-  `mbn_lcp_img_attrs()`. Set it on the one block holding the page's biggest
-  above-the-fold image — never more than one per page.
+- **Section backgrounds are a responsive CSS `background-image`, not an `<img>`.** Render
+  full-bleed/section backgrounds with **`mbn_responsive_bg( $element_id, $attachment_id,
+  $lcp, $position )`** (in `inc/block-layout-helpers.php`): it prints a scoped `<style>`
+  that swaps `background-image` by breakpoint (mobile → `medium_large`, ≥768px → `large`,
+  ≥1280px → `full`) so the browser downloads **only the size it needs** (non-matching
+  media-query backgrounds are never fetched), with `background-size:cover`. Give the
+  block wrapper a unique id (`wp_unique_id( 'mbn-…-' )`) + `bg-cover bg-center` and pass
+  it to the helper. Decorative content images (inside a card/figure) stay as
+  `wp_get_attachment_image()` `<img>` with `srcset`. **SVGs are inlined as `<svg>`** (see
+  `components` skill), never a background. The editor preview must match.
+- **LCP background.** Every section-background block has an **"LCP (above the fold)"
+  toggle** (shared `LcpControl` → `lcp` attribute). When on, pass `$lcp = true` to
+  `mbn_responsive_bg()` — it prints media-scoped
+  `<link rel="preload" as="image" fetchpriority="high">` tags so the above-the-fold
+  background paints sooner. Set it on the one block holding the page's biggest
+  above-the-fold background — never more than one per page. (For a content `<img>` LCP,
+  `mbn_lcp_img_attrs()` still adds `fetchpriority="high"` + eager.)
 - **Auto-WebP.** New JPEG/PNG uploads generate WebP sub-sizes (`optimizations.php`), so
   `wp_get_attachment_image()` serves WebP automatically. Run `wp media regenerate` to
   convert existing media.

@@ -304,23 +304,6 @@ function mbn_minify_css( string $css ): string {
 }
 
 /**
- * Minify the content of every inline <style> on the page.
- *
- * @param string $html Page HTML.
- * @return string
- */
-function mbn_optimize_inline_styles( string $html ): string {
-  return (string) preg_replace_callback(
-    '#<style\b([^>]*)>(.*?)</style>#is',
-    static function ( $matches ) {
-      $min = mbn_minify_css( $matches[2] );
-      return '' === $min ? $matches[0] : '<style' . $matches[1] . '>' . $min . '</style>';
-    },
-    $html
-  );
-}
-
-/**
  * Rewrite the buffered page HTML with the optimizations.
  *
  * @param string $html Page HTML.
@@ -335,7 +318,6 @@ function mbn_optimize_html( $html ): string {
   $html = mbn_optimize_external_scripts( $html );
   $html = mbn_optimize_inline_scripts( $html );
   $html = mbn_optimize_styles( $html );
-  $html = mbn_optimize_inline_styles( $html );
   $html = mbn_optimize_webp( $html );
   return $html;
 }

@@ -44,11 +44,36 @@ restate the shared rules — defer to them:
   `build/<name>/`. Run `npm run build` (or `npm run dev` to watch) after edits.
 - **AI-authored blocks use the `mbn-ai-` prefix.** New layout/interactive blocks
   only when existing blocks can't express the design.
+- **One Tailwind bundle (front + editor).** `npm run build:css` builds the single
+  `assets/build/tailwind.css`, inlined on both the front end and the block editor
+  (`tailwind-loader.php`) so the editor canvas always matches output. Runtime-built
+  arbitrary values are enumerated in `mbnArbitrarySafelist` (see `tailwind.config.js`);
+  add a hex to `MBN_ARBITRARY_PALETTE` rather than relying on a safelist regex (which
+  can't match arbitrary values).
 - **Editor ↔ front-end parity is mandatory.** Static blocks produce identical
   markup/classes in `edit.js` and `render.php`. Dynamic blocks: `save` returns
   `null` and `edit.js` uses `ServerSideRender` so the canvas matches output.
 - **No backend async** in render paths; keep `render.php` cheap and synchronous.
   Cache expensive per-request lookups with a static memo where safe.
+- **Shared render helpers live in `inc/block-layout-helpers.php` — reuse, never
+  duplicate (ENSURED).** Before writing inline logic in a `render.php` (inlining an
+  SVG, resolving an attachment, building layout styles/ids/scoped CSS, bg-image
+  markup, LCP attrs), **check `inc/block-layout-helpers.php` for an existing helper
+  and use it.** Existing helpers include `mbn_inline_svg_attachment()` (the ONLY
+  SVG-display path — inlines a sanitized media SVG with `currentColor`; **every SVG
+  asset renders inline as `<svg>`, NEVER an `<img>` — `$size = 0` for responsive
+  non-square artwork, a positive size for square icons; `<img>` is for raster only**),
+  `mbn_attachment_id_by_slug()`, `mbn_responsive_bg()` (responsive CSS
+  `background-image` by breakpoint + optional LCP `fetchpriority` preload — the standard
+  way to render a **section background**, not an `<img>`), `mbn_layout_bg_image_html()`,
+  `mbn_lcp_img_attrs()`,
+  `mbn_theme_get_block_element_id()/_layout_inline_styles()/_scoped_custom_css()`. If a
+  genuinely new shared helper is needed, add it **there** (one canonical location) —
+  never scatter a second copy across blocks or spin up a new `inc/` file for it. Also
+  reuse existing CSS contracts in `resources/css/app.css` (e.g. the
+  `.mbn-site-header:has(.mbn-ai-header[data-behavior])` sticky/appear rules and
+  `.mbn-ai-header__mobile[data-open]` animation) instead of re-declaring them in a
+  block's scoped `<style>`.
 - **jQuery is enqueued site-wide on the front end** (`custom_theme_enqueue_frontend_scripts`),
   so **jQuery-supported libraries are free to use** for interactive modules — sliders
   (Slick, Swiper-with-jQuery), lightboxes, etc. **Put third-party library assets (JS/CSS)

@@ -7,7 +7,7 @@
     "build:js": "wp-scripts build",
     "build:css": "node node_modules/tailwindcss/lib/cli.js -i ./resources/css/app.css -o ./assets/build/tailwind.css --minify",
     "start:js": "wp-scripts start",
-    "watch:css": "node node_modules/tailwindcss/lib/cli.js -i ./resources/css/app.css -o ./assets/build/tailwind.css --watch",
+    "watch:css": "node node_modules/tailwindcss/lib/cli.js -i ./resources/css/app.css -o ./assets/build/tailwind.css --minify --watch",
     "dev": "npm-run-all --parallel start:js watch:css",
     "bundle": "node scripts/bundle.mjs",
     "lint:php": "composer run lint",

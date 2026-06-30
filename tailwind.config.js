@@ -1,3 +1,39 @@
+/**
+ * Runtime-built arbitrary-value safelist.
+ *
+ * Some block render.php files build Tailwind classes by concatenating *dynamic*
+ * values (a thickness, an opacity, a design-token hex). Tailwind only emits an
+ * arbitrary value (`bg-[#e50b07]`, `h-[3px]`) when it sees the EXACT literal in a
+ * scanned file — and safelist *regex patterns* do NOT match arbitrary values. So we
+ * enumerate the bounded ranges + the design palette here as explicit class strings
+ * (which the safelist DOES compile), guaranteeing every runtime-built arbitrary value
+ * resolves. Add a hex to MBN_ARBITRARY_PALETTE and it works everywhere automatically.
+ */
+const MBN_ARBITRARY_PALETTE = [
+  '#e50b07', '#d3110e', '#5b0402', '#191919', '#000000', '#ffffff',
+  '#4c4c4c', '#b2b2b2', '#d8d8d8', '#f2f2f2', '#0a0a0a',
+];
+const MBN_COLOR_UTILS = [ 'bg', 'text', 'border', 'from', 'via', 'to', 'fill', 'stroke', 'ring', 'decoration', 'outline' ];
+
+const mbnArbitrarySafelist = ( () => {
+  const out = [];
+  // Arbitrary colours: <util>-[#hex] for every palette colour.
+  MBN_ARBITRARY_PALETTE.forEach( ( hex ) =>
+    MBN_COLOR_UTILS.forEach( ( util ) => out.push( `${ util }-[${ hex }]` ) )
+  );
+  // Arbitrary pixel sizes 1–24px for height/width/inset/translate-ish utilities.
+  for ( let i = 1; i <= 24; i++ ) {
+    [ 'h', 'w', 'min-h', 'min-w', 'max-w', 'top', 'bottom', 'left', 'right', 'gap', 'rounded', 'border' ].forEach(
+      ( u ) => out.push( `${ u }-[${ i }px]` )
+    );
+  }
+  // Arbitrary opacity 0–1 in 0.05 steps.
+  for ( let i = 0; i <= 100; i += 5 ) {
+    out.push( `opacity-[${ i / 100 }]` );
+  }
+  return out;
+} )();
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -64,6 +100,9 @@ module.exports = {
     },
     'rounded-mbn',
     'max-w-mbn-container',
+    // Runtime-built arbitrary values from component render.php — enumerated as
+    // explicit strings (safelist regex patterns can't match arbitrary values).
+    ...mbnArbitrarySafelist,
   ],
   plugins: [],
 };

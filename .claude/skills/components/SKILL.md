@@ -77,15 +77,43 @@ backgrounds).
 
 ## Registry (keep updated as components are built)
 
-_none yet_ — no `mbn-ai-` components have been built for the current project. Add a row
-for each component as it is created.
-
 | Component block | Purpose | Key attributes | Status |
 |---|---|---|---|
+| `mbn-ai-button` | CTA button, variants + optional media icon | `label`, `href`, `variant` (primary/solid-red/outline-red/outline-white), `size` (sm/md/lg), `iconId`, `iconPosition`, `fullWidth`, `newTab` | Built |
+| `mbn-ai-icon` | Inline a sanitized SVG from media; inherits `currentColor` | `svgId`, `size`, `colorClass` | Built |
+| `mbn-ai-input` | Underline/box text or email input | `type`, `name`, `placeholder`, `variant`, `required` | Built |
+| `mbn-ai-badge` | Tagline / eyebrow label | `label`, `variant` (plain/solid/outline), `colorClass` | Built |
+| `mbn-ai-vector-line` | Divider / accent line (plain or SVG artwork) | `style` (plain/svg), `orientation`, `colorClass`, `thickness`, `svgId` | Built |
+| `mbn-ai-pattern` | Decorative background texture as click-through `<img>` | `imageId`, `imageSize`, `opacity`, `fit`, `position` | Built |
 
-Icons that recolour on hover are uploaded as SVG **and** rendered through `mbn-ai-icon`
-(inlined for `currentColor`) — never an `<img>` (which can't inherit colour) and never a
-hardcoded inline `<path>`.
+### Icons & SVGs — ENSURED + NECESSARY
+
+- **Every icon/SVG is uploaded to the WP media library as a sanitized SVG** (the theme
+  allows SVG upload and sanitizes it on upload via `mbn_sanitize_svg_upload`; via WP-CLI
+  pass `--user=<admin>` so the `upload_files` capability check passes). **Never** ship an
+  icon as a committed theme file or a hardcoded inline `<path>` in render.
+- Render icons through **`mbn-ai-icon`**, which inlines the media SVG via the single
+  shared helper **`mbn_inline_svg_attachment( $id, $size, $classes )`** (in
+  `inc/block-layout-helpers.php`) so the SVG inherits `currentColor` and can recolour on
+  hover. That helper is the **only** SVG-display path — buttons, social links and
+  vector-lines all route through it; never add a second inliner or read the SVG file
+  inline in a block's render.
+- Author icon SVGs with `fill="currentColor"` / `stroke="currentColor"` so colour comes
+  from a Tailwind text-colour utility on the wrapper.
+- **If an asset is an SVG, render it INLINE as `<svg>` from the media library — NEVER an
+  `<img>` (ENSURED).** This applies to ALL SVGs, not just icons: accent lines/vectors
+  (`mbn-ai-vector-line` style `svg`), patterns (`mbn-ai-pattern` auto-detects an SVG via
+  `get_post_mime_type`), logos, dividers — every one goes through
+  `mbn_inline_svg_attachment( $id, $size, $classes )` (pass `$size = 0` for responsive,
+  non-square artwork that should scale from its viewBox; a positive `$size` for square
+  icons). Only fall back to `<img>` for raster assets (JPG/PNG/WebP). Rationale: inline
+  `<svg>` keeps gradients/strokes crisp, inherits `currentColor`, and avoids an extra
+  request; an `<img>` SVG can't recolour and is treated as opaque.
+- **Never set `h-auto` on an inline `<svg>` (ENSURED).** Unlike `<img>`, an inline SVG
+  does not derive height from `height:auto` reliably — size it with a SINGLE dimension
+  (`w-full` for a horizontal/full-width element, `h-full` for a vertical one, or an
+  explicit `h-[Npx]`) and let the `viewBox` supply the aspect ratio. Setting both a
+  width and `h-auto` can collapse or mis-size the SVG.
 
 > When `/build-components` (or any build) creates or extends a component, add/update
 > its row here so future runs reuse it instead of rebuilding.

@@ -121,6 +121,17 @@ The design system lives in the **Appearance → MBN Theme** preset, never hardco
 Set these with the WordPress MCP or `wp option patch update mbn_settings <key> <value>`
 (the option is an array). Re-build CSS after, since utilities reference the vars.
 
+## Step 1b — Build the reusable components (run `/build-components` AFTER the preset)
+
+Immediately after the preset is synced — and **before** the header/footer and body
+sections — run **`/build-components <figma_link>`** to scan the design's reusable
+components (buttons, icons, inputs, badges, vector-lines, patterns…) and generate the
+generic `mbn-ai-` component blocks under `src/components/`. The header, footer and every
+section then **compose** these components (`do_blocks('<!-- wp:mbn-theme/mbn-ai-button …
+/-->')`) instead of re-implementing buttons/icons/etc. (preset → components → chrome →
+sections). All icons/vectors are uploaded to the media library as **sanitized SVG** and
+rendered through `mbn-ai-icon` (see the `components` skill).
+
 ## Step 2 — Header & footer FIRST (as dedicated blocks)
 
 Create a **dedicated block per region** that matches the design and place it in the
