@@ -1,0 +1,33 @@
+# Security Rules
+
+- Sanitize all input: `sanitize_text_field()`, `absint()`, `sanitize_email()`,
+  `esc_url_raw()`, `wp_kses_post()` for trusted rich text.
+- Escape all output at the point of output: `esc_html()`, `esc_attr()`, `esc_url()`,
+  `wp_kses()`. Block render output that is intentionally raw must carry a scoped
+  `phpcs:ignore WordPress.Security.EscapeOutput...` with a reason.
+- Verify nonces for state-changing requests: `wp_verify_nonce()`,
+  `check_admin_referer()`, `check_ajax_referer()`.
+- Check capabilities before privileged actions: `current_user_can()`. Use the
+  least privilege that fits the action — not broader, not narrower.
+- Use `$wpdb->prepare()` for all database queries — never interpolate into SQL.
+
+## No tokens or hardcoded credentials
+
+- **Never** hardcode secrets in code, markup, JS, config, or committed files:
+  API keys, access/refresh tokens, bearer tokens, application passwords, OAuth
+  client secrets, DB credentials, private keys, webhook signing secrets, or
+  `Authorization` header values.
+- Read secrets at runtime from `wp-config.php` constants, environment variables,
+  or the options table (entered by an admin) — not from source. Never log or
+  `echo` a secret; never expose one in REST responses, HTML, inline scripts, or
+  error messages.
+- Application-password credentials for Remote Template Reuse stay server-side
+  (used only in the proxy request) — never sent to the client.
+- Do not commit `.env`, key files, or backups. Keep them in `.gitignore`.
+- `composer run lint:run` runs the repo secret scan (`scripts/security-scan.php`)
+  before phpcbf/phpcs; if it flags a token/credential pattern, remove the secret
+  and rotate it — do not just silence the scan.
+- Before committing, scan the diff for accidental secrets; if one was ever
+  committed, treat it as compromised and rotate it.
+
+<!-- drift -->

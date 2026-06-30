@@ -1,0 +1,14 @@
+# Git Workflow Rules
+
+- **Test before commit.** Run `composer run lint` (or `composer run lint:run` to
+  auto-fix) and confirm it passes. The `git-guard.sh` PreToolUse hook runs the
+  read-only lint before any `git commit` and blocks the commit on violations.
+- **No direct push.** Never `git push` directly. Commit to a feature branch and
+  open a pull request for review. The hook blocks `git push`.
+- Branch off `main` for changes; keep commits focused with descriptive messages.
+- Do not run browser QA automatically. For UI changes, QA runs only on request via
+  `/testing <url>` (chrome-devtools MCP); note the results in the PR.
+- Pull requests: concise description + a checklist of how the change was verified;
+  reviewers should understand it in under 30 seconds.
+- Never commit secrets, `.env`, `node_modules/`, `vendor/`, or build artifacts
+  (`assets/build/` is generated).

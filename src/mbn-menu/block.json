@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "mbn-theme/mbn-menu",
+  "title": "MBN Menu",
+  "category": "mbn-blocks",
+  "icon": "menu",
+  "description": "Renders one of the menus selected on the header/footer template (by slot). Manage menus under Appearance > Menus.",
+  "textdomain": "mbn-theme",
+  "supports": {
+    "html": false
+  },
+  "attributes": {
+    "slot": { "type": "number", "default": 1 },
+    "orientation": { "type": "string", "default": "horizontal" }
+  },
+  "editorScript": "file:./index.js",
+  "render": "file:./render.php"
+}

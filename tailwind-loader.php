@@ -103,7 +103,25 @@ function custom_theme_enqueue_tailwind_editor(): void {
 add_action( 'enqueue_block_editor_assets', 'custom_theme_enqueue_tailwind_editor', 5 );
 
 /**
- * Enqueue theme style.css for custom CSS overrides.
+ * Read the theme style.css for inlining (skips the theme-header comment).
+ *
+ * @return string Empty string if missing/empty.
+ */
+function custom_theme_get_main_stylesheet_css(): string {
+  $path = get_stylesheet_directory() . '/style.css';
+  if ( ! is_readable( $path ) ) {
+    return '';
+  }
+  // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local theme stylesheet, not a remote URL.
+  $css = (string) file_get_contents( $path );
+  // Drop the leading theme-header docblock; keep any real CSS overrides.
+  $css = (string) preg_replace( '#^\s*/\*.*?\*/#s', '', $css, 1 );
+
+  return trim( $css );
+}
+
+/**
+ * Inline theme style.css for custom CSS overrides (no external request) on the front.
  *
  * @return void
  */
@@ -112,26 +130,26 @@ function custom_theme_enqueue_main_stylesheet(): void {
       return;
   }
 
-	wp_enqueue_style(
-      'custom-theme-style',
-      get_stylesheet_uri(),
-      array( 'custom-theme-tailwind' ),
-      filemtime( get_stylesheet_directory() . '/style.css' )
-	);
+	wp_register_style( 'custom-theme-style', false, array( 'custom-theme-tailwind' ), filemtime( get_stylesheet_directory() . '/style.css' ) );
+	wp_enqueue_style( 'custom-theme-style' );
+	$css = custom_theme_get_main_stylesheet_css();
+  if ( '' !== $css ) {
+      wp_add_inline_style( 'custom-theme-style', $css );
+  }
 }
 add_action( 'wp_enqueue_scripts', 'custom_theme_enqueue_main_stylesheet', 10 );
 
 /**
- * Enqueue theme style.css in the block editor.
+ * Inline theme style.css in the block editor.
  *
  * @return void
  */
 function custom_theme_enqueue_main_stylesheet_editor(): void {
-	wp_enqueue_style(
-      'custom-theme-style-editor',
-      get_stylesheet_uri(),
-      array( 'custom-theme-tailwind' ),
-      filemtime( get_stylesheet_directory() . '/style.css' )
-	);
+	wp_register_style( 'custom-theme-style-editor', false, array( 'custom-theme-tailwind' ), filemtime( get_stylesheet_directory() . '/style.css' ) );
+	wp_enqueue_style( 'custom-theme-style-editor' );
+	$css = custom_theme_get_main_stylesheet_css();
+  if ( '' !== $css ) {
+      wp_add_inline_style( 'custom-theme-style-editor', $css );
+  }
 }
 add_action( 'enqueue_block_editor_assets', 'custom_theme_enqueue_main_stylesheet_editor', 10 );

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Shared git pre-commit hook (Claude, Cursor, terminal).
+# Enable once per clone:  git config core.hooksPath .githooks
+#
+# Keeps .cursor/ + AGENTS.md generated from .claude/ (single source of truth) and
+# blocks the commit if they were stale, so the two AI assistants never drift.
+set -uo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+sync="$root/scripts/sync-ai-config.sh"
+
+if [ -x "$sync" ]; then
+  if ! bash "$sync" --check >/dev/null 2>&1; then
+    bash "$sync" >/dev/null 2>&1 || true
+    git add "$root/.cursor" "$root/AGENTS.md" 2>/dev/null || true
+    echo "AI config was out of sync — regenerated .cursor/ + AGENTS.md from .claude/ and staged them."
+  fi
+fi
+
+exit 0

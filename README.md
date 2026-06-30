@@ -1,170 +1,139 @@
 # MBN Theme
 
-Default WordPress theme baseline for MBN projects.
+> A no-build WordPress block theme — native Gutenberg blocks, Tailwind CSS for admin and front end, and a Customizer-driven design system.
 
-## Theme Details
+![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759b)
+![PHP](https://img.shields.io/badge/PHP-7.4%2B-777bb4)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.x-38bdf8)
+![Build](https://img.shields.io/badge/blocks-no--build-success)
+![License](https://img.shields.io/badge/License-GPL--2.0-blue)
 
-- Theme Name: `MBN Theme`
-- Theme URI: https://github.com/MBNDEV/mbn-theme
-- Description: `Default MBN WordPress theme with Gutenberg-first workflow`
-- Version: `1.1.0`
-- Author: `My Biz Niche`
-- Author URI: https://www.mybizniche.com/
-- License: `GPL2` - https://www.gnu.org/licenses/gpl-2.0.html
-- Text Domain: `mbn-theme`
+**Contributors:** My Biz Niche
+**Tags:** gutenberg, blocks, tailwind, customizer, no-build
+**Requires at least:** WordPress 6.0
+**Requires PHP:** 7.4
+**Stable tag:** 1.1.0
+**License:** GPL-2.0-or-later
+**Text Domain:** `mbn-theme`
 
-## Overview
+---
 
-This repository contains a WordPress theme built with:
+## Description
 
-- native Gutenberg block support
-- Tailwind CSS styling
-- Composer for PHP tooling
-- npm for frontend tooling
-- a Block Template sync system for version-controlled templates
+MBN Theme builds pages from a small set of native Gutenberg layout blocks and styles
+everything with Tailwind utilities — in both the block editor and on the front end.
+There is **no JavaScript build step**: blocks register straight from source and the
+editor runs on plain `window.wp.*` globals. The only compiled asset is the Tailwind
+stylesheet.
 
-## Latest Features
+A Customizer panel exposes a reusable design system (color schemes, typography,
+sizes, layout) as `--mbn-*` CSS variables that the blocks consume, so the look of a
+site is configured, not hardcoded.
 
-- Auto-discovery and registration of blocks from `build/blocks/` using `block.json`
-- Unified sync tooling for templates, pages, and nav menus
-- Safer imports with 3 import modes:
-   - Skip existing
-   - Update existing
-   - Create copy
-- Import safety improvements:
-   - Nav import rollback/snapshot protection on destructive operations
-   - Safer JSON/template parsing for file imports
-- Sync import password protection enabled by default on `staging` and `production`
-- Sync password source fallback order:
-   - `CUSTOM_THEME_SYNC_PASSWORD` constant in `wp-config.php`
-   - Environment variable `CUSTOM_THEME_SYNC_PASSWORD`
-   - Theme root `.env` value (`CUSTOM_THEME_SYNC_PASSWORD=...`)
-- Cleaner admin sync UIs focused on essential actions
+## Features
+
+- **No-build blocks** — `mbn-section`, `mbn-container`, `mbn-columns`, `mbn-column`.
+  Each block is `block.json` + `render.php`; the shared editor logic is one plain-JS
+  file (`assets/js/mbn-blocks-editor.js`).
+- **Tailwind everywhere** — utilities in the admin/editor and the front end. Custom
+  classes use the `mbn-` prefix, kebab-case.
+- **Design system in the Customizer** — color schemes (rgba), primary/secondary +
+  fallback fonts, h1–h6/paragraph sizes, container width and border radius, all
+  emitted as `--mbn-*` variables (and the editor color palette).
+- **Custom HTML injection** — global (Customizer) and per-post (meta box) Header /
+  After Body / Footer HTML, injected on `wp_head` / `wp_body_open` / `wp_footer`.
+- **Block Templates** — a reusable `mbn_block_template` post type plus **Remote
+  Template Reuse** to pull templates from other sites over the REST API.
+- **Quality tooling** — PHPCS (WordPress standards) + a security scan, and an
+  on-request browser QA pass via the chrome-devtools MCP.
 
 ## Requirements
 
-- WordPress 5.8+ (or latest supported)
-- PHP version compatible with your WordPress install
-- Node.js and npm for asset builds
-- Composer for PHP dependency management
+- WordPress 6.0+
+- PHP 7.4+
+- Node.js 18+ and npm (to build the Tailwind CSS and bundle the theme)
+- Composer (for PHP linting only — no runtime dependencies)
 
 ## Installation
 
-1. Copy or clone this theme into `wp-content/themes/mbn-theme`
-2. Install PHP dependencies:
+1. Copy the theme into `wp-content/themes/mbn-theme`.
+2. Install tooling and build the stylesheet:
    ```bash
    composer install
-   ```
-3. Install Node dependencies:
-   ```bash
    npm install
+   npm run build        # compiles assets/build/tailwind.css
    ```
-4. Build assets for production:
-   ```bash
-   npm run build
-   ```
-5. Activate the theme in WordPress Admin: **Appearance > Themes**
+3. Activate **MBN Theme** in **Appearance → Themes**.
+4. Configure the design system in **Appearance → Customize → MBN Theme**.
+
+> For a production drop-in, run `npm run bundle` (see below) to get a clean
+> `bundle/mbn-theme.zip` with development and tooling files stripped out.
+
+## Customizer design system
+
+**Appearance → Customize → MBN Theme** outputs these CSS variables on `:root`
+(front end and editor), ready to use in blocks and custom CSS:
+
+| Group       | Variables |
+|-------------|-----------|
+| Colors      | `--mbn-color-scheme-1` … `--mbn-color-scheme-6` (rgba) |
+| Typography  | `--mbn-font-primary`, `--mbn-font-secondary`, `--mbn-font-fallback`, `--mbn-size-h1`…`--mbn-size-h6`, `--mbn-size-body` |
+| Layout      | `--mbn-container-width` (overrides Tailwind `.container`), `--mbn-radius` (+ `.mbn-radius` utility) |
 
 ## Development
 
-### Frontend Development
+| Command | Description |
+|---------|-------------|
+| `npm run build` | Build the Tailwind stylesheet (production, minified) |
+| `npm run dev` | Watch and rebuild Tailwind CSS |
+| `npm run bundle` | Build a distributable `bundle/mbn-theme.zip` (dev files excluded) |
+| `composer run lint` | PHPCS (WordPress Coding Standards) |
+| `composer run lint:run` | Security scan → phpcbf (auto-fix) → phpcs |
 
-- Start the local development build/watch process:
-  ```bash
-  npm run start
-  ```
-- Build production assets:
-  ```bash
-  npm run build
-  ```
+**Blocks** have no build step: edit `blocks/<name>/render.php` and
+`assets/js/mbn-blocks-editor.js` directly. Run `npm run build:css` only when you add
+Tailwind classes not already present in the compiled stylesheet. The editor render
+and the front-end `render.php` must produce identical markup/classes.
 
-### PHP / Theme Development
+## Bundling for distribution
 
-- Composer manages PHP tooling and packages.
-- Autoloading is configured in `functions.php`.
-- Theme logic and helpers are organized in `inc/`.
-
-### Block Development
-
-This theme ships with Gutenberg block support and a dedicated block folder.
-See `blocks/README.md` for block-specific development details.
-
-## Project Structure
-
-- `assets/` - compiled CSS, JS, images, icons
-- `blocks/` - Gutenberg block code and documentation
-- `inc/` - PHP includes and theme helper files
-- `template-parts/` - reusable template partials and block templates
-- `page-templates/` - classic WordPress page templates
-- `resources/css/` - source CSS assets
-- `scripts/` - utility scripts for versioning and security
-
-## Build & Linting
-
-- Install dependencies: `composer install && npm install`
-- Build assets: `npm run build`
-- Start dev mode: `npm run start`
-- Run PHP coding standards: `composer run lint`
-- Fix linting issues: `composer run lint:fix`
-
-## Block Template Sync System
-
-The theme includes a template sync mechanism for keeping Block Templates in sync between database and files.
-
-- `template-parts/` stores header, footer, and layout block templates
-- `page-templates/` contains classic PHP page templates
-- Sync tools are available in the WordPress admin to export/import templates
-
-## Production Password Protection for Sync Imports
-
-Import actions for Page Sync, Nav Menu Sync, and Template Sync support password protection on staging and production by default.
-
-### Configure in `wp-config.php`
-
-Add a strong secret for staging/production environments:
-
-```php
-define( 'CUSTOM_THEME_SYNC_PASSWORD', 'replace-with-a-strong-unique-password' );
+```bash
+npm run bundle
 ```
 
-You can also provide the value via environment variable:
+Builds the Tailwind stylesheet, then stages and zips the theme to
+`bundle/mbn-theme.zip`. Everything ships **except** development, tooling and
+generated files: `.claude/`, `node_modules/`, `vendor/`, `.git/` + `.gitignore`,
+`.env*`, `resources/`, `scripts/`, `plans/`, the `bundle/` output, and the
+Composer/npm/Tailwind/PostCSS/PHPCS manifests and config at the root.
 
-```text
-CUSTOM_THEME_SYNC_PASSWORD=replace-with-a-strong-unique-password
+The local `vendor/` (dev-only — PHPCS) is never shipped. If `composer.json` ever
+declares a **runtime** dependency (a `require` entry), the bundle runs
+`composer install --no-dev` into the staged copy so a clean, production-only
+`vendor/` is included — without the dev tooling and without touching your local
+`vendor/`.
+
+## Project structure
+
+```
+mbn-theme/
+├── assets/build/        Compiled Tailwind CSS (generated)
+├── assets/css|js/       Block editor styles + scripts
+├── blocks/<name>/       block.json + render.php per block
+├── inc/                 Theme setup, customizer, custom HTML, block templates, reuse
+├── page-templates/      Classic page templates
+├── template-parts/      Reusable template partials
+└── functions.php        Loads the components above
 ```
 
-Or place it in a theme root `.env` file:
+## Quality assurance
 
-```text
-CUSTOM_THEME_SYNC_PASSWORD=replace-with-a-strong-unique-password
-```
+Browser QA is **on-request only** — it never runs automatically. With Claude Code,
+run `/testing <url>` to test a specific URL (optionally passing a Figma link to
+compare against) across desktop (1920×1080) and Moto G Power (360×640) and fix issues
+on that page. QA is driven by the **chrome-devtools MCP** — there is no standalone
+test runner to invoke manually.
 
-### Default behavior
+## License
 
-- Password is required by default when `wp_get_environment_type()` is `staging` or `production`.
-- Import is blocked if password is missing or incorrect.
-- If no password is configured while protection is required, imports are blocked.
-
-### Related admin tools
-
-- Tools -> Page Content Sync (import)
-- Tools -> Nav Menu Sync (import)
-- Block Templates -> Sync Tools (import)
-
-### Optional customization
-
-Developers can override whether password is required using the `custom_theme_sync_password_required` filter.
-
-## Useful Links
-
-- `CHANGELOG.md` - release notes and version history
-- `docs/DEPLOYMENT.md` - deployment guide
-- `docs/DEPLOYMENT_CHECKLIST.md` - deployment checklist
-- `docs/VERSIONING.md` - versioning workflow
-- `docs/RELEASE-CHECKLIST.md` - release process
-- `SECURITY.md` - security policy and guidance
-- `blocks/README.md` - block development documentation
-
-## Notes
-
-This README is intended for theme maintainers and developers working with the WordPress theme. For environment-specific deployment and sync workflows, refer to the `docs/` directory.
+GPL-2.0-or-later. See <https://www.gnu.org/licenses/gpl-2.0.html>.

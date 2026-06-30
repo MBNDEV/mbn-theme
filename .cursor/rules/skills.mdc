@@ -1,0 +1,17 @@
+---
+description: mbn-theme skills index (apply the matching skill for the task)
+globs:
+alwaysApply: true
+---
+<!-- AUTO-GENERATED from .claude/ by scripts/sync-ai-config.sh — DO NOT EDIT. Edit the .claude/ source and re-run the sync. -->
+
+# Skills
+
+Full skill instructions live in `.claude/skills/<name>/SKILL.md` (shared
+source of truth). Apply the one that matches the task:
+
+- **components** — Reusable mbn-theme component blocks captured from Figma's reusable components (buttons, patterns, vector-lines, strokes, badges, cards, inputs, icons). Defines how to scan Figma for components, dedupe against existing mbn-ai- blocks, and build generic attribute-driven component blocks that sections and /build-design compose. Use whenever building or reusing a repeated design element, or running /build-components.
+- **developer** — Senior WordPress/Gutenberg engineering practices for mbn-theme — how to design, build, and verify native no-build blocks and theme code to a senior standard. Use for any block, template, or theme-code work.
+- **figma** — Convert a Figma design into native mbn-theme Gutenberg blocks — section by section, chrome-devtools-verified against the Figma URL. Exports EVERY asset (images, backgrounds, videos, vectors, icons) to the WP media library (no duplicates), uses ZERO attribute styling (Tailwind utilities / CSS vars / <style> only), and writes the result into a post's post_content. Use when turning a Figma frame/section into WordPress blocks or importing Figma media into WP.
+- **frontend** — Web design practices for mbn-theme — Tailwind utilities (admin + front end), mobile-first responsive design, preset CSS variables, accessibility, and shallow modern markup. Use when building or styling blocks, templates, or admin UI.
+- **quality-assurance** — Browser QA for mbn-theme using the chrome-devtools MCP across desktop (1920x1080) and Moto G Power (360x640) — opens the post URL alongside the Figma link (and prototype), compares section by section, checks interactions/sticky header/background video, enforces no attribute styling and all-assets-in-WP-media, and fixes drift automatically. Run ONLY on explicit request via the /testing <url> command — never automatically.

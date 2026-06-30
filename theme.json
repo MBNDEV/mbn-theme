@@ -1,0 +1,32 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/theme.json",
+  "version": 3,
+  "settings": {
+    "appearanceTools": true,
+    "layout": {
+      "contentSize": "1280px",
+      "wideSize": "1280px"
+    },
+    "typography": {
+      "customFontSize": true,
+      "fluid": false,
+      "fontFamilies": [
+        {
+          "name": "System Sans",
+          "slug": "system-sans",
+          "fontFamily": "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+        },
+        {
+          "name": "System Serif",
+          "slug": "system-serif",
+          "fontFamily": "ui-serif, Georgia, Cambria, \"Times New Roman\", Times, serif"
+        },
+        {
+          "name": "System Mono",
+          "slug": "system-mono",
+          "fontFamily": "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+        }
+      ]
+    }
+  }
+}

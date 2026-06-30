@@ -1,50 +1,108 @@
+/**
+ * Runtime-built arbitrary-value safelist.
+ *
+ * Some block render.php files build Tailwind classes by concatenating *dynamic*
+ * values (a thickness, an opacity, a design-token hex). Tailwind only emits an
+ * arbitrary value (`bg-[#e50b07]`, `h-[3px]`) when it sees the EXACT literal in a
+ * scanned file — and safelist *regex patterns* do NOT match arbitrary values. So we
+ * enumerate the bounded ranges + the design palette here as explicit class strings
+ * (which the safelist DOES compile), guaranteeing every runtime-built arbitrary value
+ * resolves. Add a hex to MBN_ARBITRARY_PALETTE and it works everywhere automatically.
+ */
+const MBN_ARBITRARY_PALETTE = [
+  '#e50b07', '#d3110e', '#5b0402', '#191919', '#000000', '#ffffff',
+  '#4c4c4c', '#b2b2b2', '#d8d8d8', '#f2f2f2', '#0a0a0a',
+];
+const MBN_COLOR_UTILS = [ 'bg', 'text', 'border', 'from', 'via', 'to', 'fill', 'stroke', 'ring', 'decoration', 'outline' ];
+
+const mbnArbitrarySafelist = ( () => {
+  const out = [];
+  // Arbitrary colours: <util>-[#hex] for every palette colour.
+  MBN_ARBITRARY_PALETTE.forEach( ( hex ) =>
+    MBN_COLOR_UTILS.forEach( ( util ) => out.push( `${ util }-[${ hex }]` ) )
+  );
+  // Arbitrary pixel sizes 1–24px for height/width/inset/translate-ish utilities.
+  for ( let i = 1; i <= 24; i++ ) {
+    [ 'h', 'w', 'min-h', 'min-w', 'max-w', 'top', 'bottom', 'left', 'right', 'gap', 'rounded', 'border' ].forEach(
+      ( u ) => out.push( `${ u }-[${ i }px]` )
+    );
+  }
+  // Arbitrary opacity 0–1 in 0.05 steps.
+  for ( let i = 0; i <= 100; i += 5 ) {
+    out.push( `opacity-[${ i / 100 }]` );
+  }
+  return out;
+} )();
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
     './*.php',
-    './blocks/**/*.php',
-    './blocks/**/*.js',
-    './blocks/**/*.jsx',
-    './blocks/**/*.css',
+    './inc/**/*.php',
+    './src/**/*.php',
+    './src/**/*.js',
     './template-parts/**/*.php',
+    './page-templates/**/*.php',
+    './assets/js/**/*.js',
     './resources/**/*.css',
   ],
   theme: {
     extend: {
       colors: {
-        cream: '#F9F5EE',
-        'cream-light': '#FFF6E5',
-        'gold-light': '#FCE5B0',
-        gold: '#B89352',
-        'gold-dark': '#6B4502',
-        'dark-text': '#25272B',
-        'footer-bg': '#191919',
-        'paragraph-gray': '#B2B2B2',
-        'card-cream': '#F5F1E8',
-        'card-gold': '#FFF4D9',
-        'card-beige': '#F8F5F0',
-        'check-green': '#7CAA6D',
-        'divider-gold': '#CEB270',
-        'card-label': '#3A3A3A',
-        'intro-bg': '#EFEBE3',
-        'mission-text': 'rgba(0, 0, 0, 0.20)',
+        'scheme-1': 'var(--mbn-color-scheme-1)',
+        'scheme-2': 'var(--mbn-color-scheme-2)',
+        'scheme-3': 'var(--mbn-color-scheme-3)',
+        'scheme-4': 'var(--mbn-color-scheme-4)',
+        'scheme-5': 'var(--mbn-color-scheme-5)',
+        'scheme-6': 'var(--mbn-color-scheme-6)',
+        'scheme-7': 'var(--mbn-color-scheme-7)',
+        'scheme-8': 'var(--mbn-color-scheme-8)',
+        'mbn-primary': 'var(--mbn-color-primary, var(--mbn-color-scheme-1))',
+        'mbn-secondary': 'var(--mbn-color-secondary, var(--mbn-color-scheme-2))',
       },
       fontFamily: {
-        sofia: ['"Sofia Sans"', 'sans-serif'],
-        poppins: ['"Poppins"', 'sans-serif'],
-        inter: ['"Inter"', 'sans-serif'],
+        primary: 'var(--mbn-font-primary)',
+        secondary: 'var(--mbn-font-secondary)',
       },
-      letterSpacing: {
-        'hero': '-0.74px',        // For h1 hero headings
-        'heading': '-0.56px',     // For large h2 headings
-        'subheading': '-0.28px',  // For medium h4 subheadings
-        'body': '-0.18px',        // For body text/paragraphs
-        'mission': '-0.4px',      // For mission section text
-        'display': '-0.8px',      // For extra large display text
-        'label': '-0.24px',       // For small labels
-        'title': '-0.32px',       // For medium titles
+      fontSize: {
+        'mbn-h1': 'var(--mbn-size-h1)',
+        'mbn-h2': 'var(--mbn-size-h2)',
+        'mbn-h3': 'var(--mbn-size-h3)',
+        'mbn-h4': 'var(--mbn-size-h4)',
+        'mbn-h5': 'var(--mbn-size-h5)',
+        'mbn-h6': 'var(--mbn-size-h6)',
+        'mbn-body': 'var(--mbn-size-body)',
+      },
+      borderRadius: {
+        mbn: 'var(--mbn-radius)',
+      },
+      maxWidth: {
+        'mbn-container': 'var(--mbn-container-width)',
       },
     },
   },
+  // Scheme colors / fonts are used from post_content (which Tailwind does not
+  // scan), so keep their utilities (+ common variants) always compiled.
+  safelist: [
+    {
+      pattern: /^(bg|text|border)-scheme-[1-8]$/,
+      variants: [ 'hover', 'focus', 'group-hover', 'md', 'lg' ],
+    },
+    {
+      pattern: /^(bg|text|border)-(mbn-primary|mbn-secondary)$/,
+      variants: [ 'hover', 'focus', 'group-hover' ],
+    },
+    {
+      pattern: /^(font-primary|font-secondary)$/,
+    },
+    {
+      pattern: /^text-mbn-(h[1-6]|body)$/,
+    },
+    'rounded-mbn',
+    'max-w-mbn-container',
+    // Runtime-built arbitrary values from component render.php — enumerated as
+    // explicit strings (safelist regex patterns can't match arbitrary values).
+    ...mbnArbitrarySafelist,
+  ],
   plugins: [],
 };

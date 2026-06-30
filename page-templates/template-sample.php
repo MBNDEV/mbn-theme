@@ -3,7 +3,7 @@
  * Template Name: Sample Template
  * Template Post Type: page, post
  *
- * Main column only; widget sidebar below main (widgets/widgets-sidebar.php).
+ * Main content column only.
  *
  * @package CustomTheme
  */
