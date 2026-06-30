@@ -21,6 +21,7 @@ the two assistants always have the same skills, rules, commands and workflow.
 
 - `/build-components`
 - `/build-design`
+- `/bundler`
 - `/create-release`
 - `/pull-request`
 - `/reset`

@@ -3,11 +3,12 @@
  * Build a distributable theme zip under bundle/.
  *
  * Denylist approach: every theme file ships EXCEPT development, tooling and
- * generated artifacts. Excluded: .claude, node_modules, env files, git
- * metadata + .gitignore, and the dev/build tooling at the project root
- * (Composer/npm manifests, Tailwind/PostCSS config, resources, scripts,
- * plans, vendor). Runtime PHP, blocks, templates, the compiled Tailwind
- * stylesheet, README and screenshot are kept.
+ * generated artifacts. Excluded: the AI/dev harness (.claude, .cursor, AGENTS.md,
+ * .githooks), node_modules, env files, git metadata + .gitignore, and the
+ * dev/build tooling at the project root (Composer/npm manifests, Tailwind/PostCSS
+ * config, resources, scripts, plans, vendor). Runtime PHP, blocks, templates, the
+ * compiled Tailwind stylesheet, README and screenshot are kept — and the build is
+ * aborted if any REQUIRED_KEEP runtime file is missing from the staged copy.
  */
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync, mkdirSync, rmSync, cpSync, readdirSync } from 'node:fs';
@@ -26,8 +27,11 @@ const stageDir = path.join( outDir, slug );
  * and lint tooling.
  */
 const EXCLUDE_NAMES = new Set( [
-	// editor / agent / VCS
+	// editor / agent / VCS (never ship the AI/dev harness)
 	'.claude',
+	'.cursor',
+	'AGENTS.md',
+	'.githooks',
 	'.git',
 	'.gitignore',
 	'.vscode',
@@ -56,6 +60,25 @@ const EXCLUDE_NAMES = new Set( [
 const EXCLUDE_PATTERNS = [
 	/(^|\/)\.env($|\.)/, // .env, .env.example, .env.local …
 	/\.map$/,
+];
+
+/**
+ * Runtime files the bundle MUST contain — a broken theme otherwise. The build is
+ * aborted if any are missing from the staged copy (theme-root-relative paths).
+ */
+const REQUIRED_KEEP = [
+	'style.css',
+	'functions.php',
+	'index.php',
+	'theme.json',
+	'block-registry.php',
+	'tailwind-loader.php',
+	'optimizations.php',
+	'header.php',
+	'footer.php',
+	'inc',
+	'build',
+	'assets/build/tailwind.css',
 ];
 
 function isExcluded( rel ) {
@@ -105,6 +128,16 @@ if ( runtimeDeps.length ) {
 	// Drop the manifests — the shipped theme only needs the resolved vendor/.
 	rmSync( path.join( stageDir, 'composer.json' ), { force: true } );
 	rmSync( path.join( stageDir, 'composer.lock' ), { force: true } );
+}
+
+console.log( 'Verifying required files…' );
+const missing = REQUIRED_KEEP.filter( ( rel ) => ! existsSync( path.join( stageDir, rel ) ) );
+if ( missing.length ) {
+	rmSync( outDir, { recursive: true, force: true } );
+	throw new Error(
+		`Bundle aborted — required file(s) missing from the staged theme: ${ missing.join( ', ' ) }. ` +
+			'Run `npm run build` and check scripts/bundle.mjs EXCLUDE rules.'
+	);
 }
 
 console.log( 'Zipping…' );
