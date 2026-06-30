@@ -253,8 +253,10 @@ function mbn_responsive_bg( string $element_id, int $attachment_id, bool $lcp = 
   if ( ! $desktop ) {
     return '';
   }
-  $mobile = wp_get_attachment_image_url( $attachment_id, 'medium_large' ) ?: $desktop;
-  $tablet = wp_get_attachment_image_url( $attachment_id, 'large' ) ?: $desktop;
+  $mobile = wp_get_attachment_image_url( $attachment_id, 'medium_large' );
+  $mobile = $mobile ? $mobile : $desktop;
+  $tablet = wp_get_attachment_image_url( $attachment_id, 'large' );
+  $tablet = $tablet ? $tablet : $desktop;
   $pos    = in_array( $position, array( 'center', 'top', 'bottom' ), true ) ? $position : 'center';
   $sel    = '#' . $element_id;
 

@@ -77,14 +77,11 @@ backgrounds).
 
 ## Registry (keep updated as components are built)
 
+_none yet_ — no `mbn-ai-` components have been built for the current project. Add a row
+for each component as it is created.
+
 | Component block | Purpose | Key attributes | Status |
 |---|---|---|---|
-| `mbn-ai-button` | CTA button, variants + optional media icon | `label`, `href`, `variant` (primary/solid-red/outline-red/outline-white), `size` (sm/md/lg), `iconId`, `iconPosition`, `fullWidth`, `newTab` | Built |
-| `mbn-ai-icon` | Inline a sanitized SVG from media; inherits `currentColor` | `svgId`, `size`, `colorClass` | Built |
-| `mbn-ai-input` | Underline/box text or email input | `type`, `name`, `placeholder`, `variant`, `required` | Built |
-| `mbn-ai-badge` | Tagline / eyebrow label | `label`, `variant` (plain/solid/outline), `colorClass` | Built |
-| `mbn-ai-vector-line` | Divider / accent line (plain or SVG artwork) | `style` (plain/svg), `orientation`, `colorClass`, `thickness`, `svgId` | Built |
-| `mbn-ai-pattern` | Decorative background texture as click-through `<img>` | `imageId`, `imageSize`, `opacity`, `fit`, `position` | Built |
 
 ### Icons & SVGs — ENSURED + NECESSARY
 
