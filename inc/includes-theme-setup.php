@@ -51,6 +51,9 @@ add_action( 'after_setup_theme', 'custom_theme_theme_setup' );
  * @return void
  */
 function custom_theme_enqueue_frontend_scripts(): void {
+	// jQuery (core handle) on the front end for blocks/plugins that expect it.
+	wp_enqueue_script( 'jquery' );
+
 	$scripts = array(
 		'mbn-video'  => 'assets/js/mbn-video.js',
 		'mbn-reveal' => 'assets/js/mbn-reveal.js',

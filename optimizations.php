@@ -7,15 +7,21 @@
  *      load so fonts load late (the metric-matched fallback shows first, minimal
  *      shift).
  *   2. Defer scripts — external scripts get `defer`; inline scripts with no type
- *      (or text/javascript) are turned into `type="lazyload"` and run after the
- *      page is interactive, in order, via Blob URLs (assets/js/mbn-lazyload.js).
+ *      (or text/javascript) are turned into `type="lazyload"` and re-run after the
+ *      page is interactive, in order, as fresh inline scripts (CSP-safe, no Blob
+ *      URLs) by assets/js/mbn-lazyload.js.
  *   3. Defer non-theme stylesheets — third-party/plugin stylesheets load
  *      non-blocking (`media="print"` → `all` on load); the theme's own styles
  *      (inline and its stylesheet) are left as-is to avoid a flash of unstyled
  *      content.
+ *   4. Minify inline `<style>` CSS — strip comments + collapse whitespace
+ *      (calc()/combinators preserved).
  *
- * Skipped in the admin, editor, customizer, AJAX/REST/feeds and for logged-in
- * users (so the toolbar and editor are untouched). Toggle with the
+ * It also sends security headers (site-wide) and Cache-Control — public/cacheable
+ * for anonymous visitors, private/no-cache for logged-in users.
+ *
+ * The page rewrite is skipped in the admin, editor, customizer, AJAX/REST/feeds and
+ * for logged-in users (so the toolbar and editor are untouched). Toggle with the
  * `mbn_enable_optimizations` filter.
  *
  * @package CustomTheme
@@ -24,6 +30,70 @@
 if ( ! defined( 'ABSPATH' ) ) {
   exit;
 }
+
+/**
+ * Send security headers on the front end (filterable via `mbn_security_headers`).
+ * HSTS is only sent over HTTPS. The CSP is the minimal `upgrade-insecure-requests`
+ * — it does NOT restrict `script-src`, so the (now Blob-free) inline deferred
+ * scripts run fine.
+ *
+ * @return void
+ */
+function mbn_send_security_headers(): void {
+  if ( is_admin() || headers_sent() ) {
+    return;
+  }
+
+  $headers = array(
+	  'X-XSS-Protection'        => '1; mode=block',
+	  'X-Frame-Options'         => 'SAMEORIGIN',
+	  'X-Content-Type-Options'  => 'nosniff',
+	  'Referrer-Policy'         => 'strict-origin-when-cross-origin',
+	  'Content-Security-Policy' => 'upgrade-insecure-requests;',
+	  'Permissions-Policy'      => 'camera=self, microphone=self',
+  );
+  if ( is_ssl() ) {
+    $headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload';
+  }
+
+  foreach ( (array) apply_filters( 'mbn_security_headers', $headers ) as $name => $value ) {
+    if ( '' !== (string) $value ) {
+      header( $name . ': ' . $value );
+    }
+  }
+}
+add_action( 'send_headers', 'mbn_send_security_headers' );
+
+/**
+ * Cache-Control: public/cacheable for anonymous GET requests, private/no-store for
+ * logged-in users (and POST, previews, 404, search, feeds). The anonymous TTL is
+ * filterable via `mbn_cache_max_age` (seconds; 0 disables public caching).
+ *
+ * @return void
+ */
+function mbn_send_cache_headers(): void {
+  if ( is_admin() || headers_sent() ) {
+    return;
+  }
+
+  // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only request-method check, not form processing.
+  $method   = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) ) : 'GET';
+  $no_cache = defined( 'DONOTCACHEPAGE' ) && DONOTCACHEPAGE;
+  $is_anon  = ! is_user_logged_in() && in_array( $method, array( 'GET', 'HEAD' ), true ) && ! $no_cache
+    && ! is_preview() && ! is_404() && ! is_search() && ! is_feed();
+
+  if ( $is_anon ) {
+    $max_age = (int) apply_filters( 'mbn_cache_max_age', 600 );
+    if ( $max_age > 0 ) {
+      header( 'Cache-Control: public, max-age=' . $max_age . ', stale-while-revalidate=60' );
+      return;
+    }
+  }
+
+  header( 'Cache-Control: no-cache, no-store, must-revalidate, private' );
+  header( 'Pragma: no-cache' );
+}
+add_action( 'send_headers', 'mbn_send_cache_headers', 11 );
 
 /**
  * Auto-WebP: generate the intermediate image sizes as WebP for new JPEG/PNG
@@ -217,6 +287,40 @@ function mbn_optimize_styles( string $html ): string {
 }
 
 /**
+ * Minify a block of CSS — safely. Strips comments and collapses whitespace runs to
+ * a single space (so descendant combinators like `div p` survive), then tightens
+ * the space around `{ } ; ,`. It deliberately does NOT touch spacing around `:`,
+ * `+`, `-`, `>` or `~`, so `calc(100% - 1rem)` and combinators are not broken.
+ *
+ * @param string $css CSS source.
+ * @return string
+ */
+function mbn_minify_css( string $css ): string {
+  $css = (string) preg_replace( '#/\*(?!!)[\s\S]*?\*/#', '', $css ); // drop comments (keep /*! */).
+  $css = (string) preg_replace( '/\s+/', ' ', $css );                // collapse whitespace.
+  $css = (string) preg_replace( '/\s*([{};,])\s*/', '$1', $css );    // tighten around structural tokens.
+  $css = str_replace( ';}', '}', $css );                             // drop the final semicolon in a rule.
+  return trim( $css );
+}
+
+/**
+ * Minify the content of every inline <style> on the page.
+ *
+ * @param string $html Page HTML.
+ * @return string
+ */
+function mbn_optimize_inline_styles( string $html ): string {
+  return (string) preg_replace_callback(
+    '#<style\b([^>]*)>(.*?)</style>#is',
+    static function ( $matches ) {
+      $min = mbn_minify_css( $matches[2] );
+      return '' === $min ? $matches[0] : '<style' . $matches[1] . '>' . $min . '</style>';
+    },
+    $html
+  );
+}
+
+/**
  * Rewrite the buffered page HTML with the optimizations.
  *
  * @param string $html Page HTML.
@@ -231,6 +335,7 @@ function mbn_optimize_html( $html ): string {
   $html = mbn_optimize_external_scripts( $html );
   $html = mbn_optimize_inline_scripts( $html );
   $html = mbn_optimize_styles( $html );
+  $html = mbn_optimize_inline_styles( $html );
   $html = mbn_optimize_webp( $html );
   return $html;
 }

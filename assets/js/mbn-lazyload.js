@@ -5,7 +5,8 @@
  *   - Re-applies deferred font CSS (style[type="text/lazystyle"]) on window load,
  *     so webfonts load late.
  *   - Runs lazy inline scripts (script[type="lazyload"]) after the page is
- *     interactive, in document order, via Blob URLs.
+ *     interactive, in document order, by copying each into a fresh inline
+ *     <script> (synchronous, no Blob URL — CSP-safe under script-src 'self').
  *
  * Plain browser JS, no dependencies.
  */
@@ -28,10 +29,19 @@
 	function runLazyScripts() {
 		var scripts = document.querySelectorAll( 'script[type="lazyload"]' );
 		Array.prototype.forEach.call( scripts, function ( node ) {
-			var blob = new Blob( [ node.textContent ], { type: 'text/javascript' } );
+			// Re-run as a standard INLINE script (copy the text into a fresh
+			// element). Inline scripts inserted into the DOM execute synchronously
+			// and in insertion order — so this preserves order, needs no Blob URL
+			// (no `blob:` CSP violation under script-src 'self') and avoids the
+			// async race a Blob/external script would introduce.
 			var run = document.createElement( 'script' );
-			run.src = URL.createObjectURL( blob );
-			run.async = false; // preserve execution order
+			for ( var i = 0; i < node.attributes.length; i++ ) {
+				var attr = node.attributes[ i ];
+				if ( attr.name !== 'type' ) {
+					run.setAttribute( attr.name, attr.value ); // keep id, nonce, etc.
+				}
+			}
+			run.text = node.textContent;
 			node.parentNode.replaceChild( run, node );
 		} );
 	}

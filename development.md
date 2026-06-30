@@ -74,6 +74,10 @@ GET  /wp-json/mbn/v1/posts/<id>     # export
 POST /wp-json/mbn/v1/posts          # import (upsert), JSON body
 ```
 
+**Admin UI:** the post list tables show an **Export** row action per post (downloads its
+JSON) and an **Import** button above the list (upload a JSON export to upsert). Both are
+capability- + nonce-checked.
+
 **Authorization:** the `edit_posts` capability (works with an application password or a
 logged-in editor), **or** a shared token — define `MBN_IO_TOKEN` in `wp-config.php` and
 send it as the `X-MBN-Token` header. Never hardcode the token in source or commit it.
@@ -87,9 +91,18 @@ On anonymous front-end requests the page is buffered and rewritten to load late:
   fallback shows first and the webfont swaps in late (minimal layout shift).
 - **Scripts** — external scripts get `defer`; executable inline scripts (no type or
   `text/javascript`, excluding WordPress `-js-before/after/extra` data) become
-  `type="lazyload"` and run after the page is interactive, in order, via Blob URLs.
+  `type="lazyload"` and re-run after the page is interactive, in order, as **fresh
+  inline `<script>` elements** (synchronous, no Blob URLs — CSP-safe under
+  `script-src 'self'`, no async race).
 - **Styles** — non-theme/plugin stylesheets load non-blocking (`media="print"` → `all`
   on load); the theme's own styles stay to avoid a flash of unstyled content.
+- **Security headers** — sent site-wide on the front end (X-Frame-Options SAMEORIGIN,
+  X-Content-Type-Options nosniff, X-XSS-Protection, Referrer-Policy, a minimal CSP
+  `upgrade-insecure-requests`, Permissions-Policy, and HSTS over HTTPS). Filter:
+  `mbn_security_headers`.
+- **Caching** — `Cache-Control: public, max-age=600` for anonymous GET/HEAD requests;
+  `no-store, private` for logged-in users (and POST/preview/404/search/feed). TTL via
+  the `mbn_cache_max_age` filter (0 disables); honours `DONOTCACHEPAGE`.
 
 `assets/js/mbn-lazyload.js` is the small loader. It is **skipped** in admin, editor,
 customizer, AJAX/REST/feeds and **for logged-in users** (so the toolbar/editor are

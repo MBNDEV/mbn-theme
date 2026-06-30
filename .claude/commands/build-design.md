@@ -192,8 +192,11 @@ For **each** section, in order, top to bottom:
      background image **or** video (+ preload `<img>`), gradients, overlays, textures,
      spacing/padding, line breaks, exact text, and `hover:`/`focus:` + scroll
      interactions with smooth transitions.
-   - **Modules:** for sliders/carousels/modals, enqueue a library (e.g. Slick) via the
-     block's assets and wire it up; reproduce patterns/animated vectors faithfully.
+   - **Modules:** for sliders/carousels/modals, use a jQuery-supported library (e.g.
+     Slick) — **jQuery is enqueued site-wide**. Drop the library's JS/CSS assets in the
+     theme's **`libs/`** directory and enqueue them from the block (depend on `jquery`),
+     with your init in the block's `view.js`; reproduce patterns/animated vectors
+     faithfully.
    - **Background video** renders as: a `<video autoplay muted loop playsinline>` with
      a **mandatory `<img>` poster** (the preload still) layered so the image shows
      until the video is ready and on reduced-motion / no-autoplay.

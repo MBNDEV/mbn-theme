@@ -49,6 +49,13 @@ restate the shared rules — defer to them:
   `null` and `edit.js` uses `ServerSideRender` so the canvas matches output.
 - **No backend async** in render paths; keep `render.php` cheap and synchronous.
   Cache expensive per-request lookups with a static memo where safe.
+- **jQuery is enqueued site-wide on the front end** (`custom_theme_enqueue_frontend_scripts`),
+  so **jQuery-supported libraries are free to use** for interactive modules — sliders
+  (Slick, Swiper-with-jQuery), lightboxes, etc. **Put third-party library assets (JS/CSS)
+  in the theme's `libs/` directory**, then enqueue them from the block (declare
+  `array( 'jquery' )` as the dependency) and keep the init in the block's `view.js`/asset
+  (not inline); reserve space to avoid CLS. Prefer a small vanilla solution when one is
+  trivial; reach for a library when it earns its weight.
 
 ## Media & video in blocks
 
