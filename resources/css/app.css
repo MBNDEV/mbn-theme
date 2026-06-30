@@ -7,3 +7,130 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  /*
+   * DA-Motorsports body buttons: angular (no radius) with a red bottom accent
+   * and the Oxanium display face — matches the design's CTA style across the
+   * hero, CTAs and location blocks. Applies to core button blocks used in
+   * post content (the header/footer blocks style their own <a>s).
+   */
+  .wp-block-button__link {
+    border-radius: 0;
+    font-family: var(--mbn-font-primary);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    box-shadow: 0 3px 0 0 #d3110e;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  }
+
+  .wp-block-button__link:hover,
+  .wp-block-button__link:focus {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 0 #d3110e;
+  }
+}
+
+/* Scroll-reveal animations — driven by [data-mbn-reveal] + assets/js/mbn-reveal.js.
+   The hidden start state is gated behind .mbn-reveal-ready (added by the script) so
+   content is NEVER hidden where the script doesn't run — the block editor, or JS off. */
+.mbn-reveal-ready [data-mbn-reveal]:not([data-mbn-reveal='none']) > * {
+  opacity: 0;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  will-change: opacity, transform;
+}
+.mbn-reveal-ready [data-mbn-reveal='slide-up'] > * { transform: translateY(28px); }
+.mbn-reveal-ready [data-mbn-reveal='slide-down'] > * { transform: translateY(-28px); }
+.mbn-reveal-ready [data-mbn-reveal='slide-left'] > * { transform: translateX(28px); }
+.mbn-reveal-ready [data-mbn-reveal='slide-right'] > * { transform: translateX(-28px); }
+.mbn-reveal-ready [data-mbn-reveal='zoom'] > * { transform: scale(0.94); }
+.mbn-reveal-ready [data-mbn-reveal].mbn-revealed > * {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mbn-reveal-ready [data-mbn-reveal] > * {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* Gravity Forms newsletter in the footer — match the dark underline design. */
+.mbn-ai-footer__gform .gform_fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.mbn-ai-footer__gform .gfield input[type='email'],
+.mbn-ai-footer__gform .gfield input[type='text'] {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  padding: 0.5rem 0;
+  color: #fff;
+  font-family: var(--mbn-font-secondary);
+}
+.mbn-ai-footer__gform .gfield input::placeholder { color: rgba(255, 255, 255, 0.6); }
+.mbn-ai-footer__gform .gfield input:focus { border-color: #fff; outline: none; }
+.mbn-ai-footer__gform .gform_footer { margin-top: 1rem; }
+.mbn-ai-footer__gform .gform_button {
+  display: inline-flex;
+  height: 2.5rem;
+  align-items: center;
+  border: 2px solid var(--mbn-color-scheme-1);
+  background: transparent;
+  padding: 0 1rem;
+  font-family: var(--mbn-font-primary);
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #fff;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+.mbn-ai-footer__gform .gform_button:hover { background: var(--mbn-color-scheme-1); }
+
+/* Header behaviour. A position:sticky element only stays pinned while its own
+   parent is on screen, and the header block's parent (the masthead) is only as
+   tall as the header — so the page-spanning .mbn-site-header wrapper is what must
+   stick. Driven by the inner block's data-behavior. */
+.mbn-site-header:has(.mbn-ai-header[data-behavior='sticky']),
+.mbn-site-header:has(.mbn-ai-header[data-behavior='appear']) {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.mbn-site-header:has(.mbn-ai-header[data-behavior='appear']) {
+  transition: transform 0.3s ease;
+  will-change: transform;
+}
+.mbn-site-header.mbn-header-hidden {
+  transform: translateY(-100%);
+}
+.mbn-site-header:has(.mbn-ai-header[data-transparent='true']) {
+  border-color: transparent;
+}
+
+/* Mobile header menu — smooth open/close + submenu dropdown transitions. */
+@media (max-width: 1023px) {
+  .mbn-ai-header__mobile {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s ease;
+  }
+  .mbn-ai-header__mobile[data-open='true'] { grid-template-rows: 1fr; }
+  .mbn-ai-header__mobile-inner { min-height: 0; overflow: hidden; }
+  .mbn-ai-header__submenu--mobile {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+  }
+  .mbn-ai-header__item[data-open='true'] > .mbn-ai-header__submenu--mobile {
+    max-height: 30rem;
+    opacity: 1;
+  }
+  .mbn-ai-header__item[data-open='true'] .mbn-ai-header__chevron { transform: rotate(180deg); }
+}

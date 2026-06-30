@@ -1,0 +1,18 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "mbn-theme/mbn-logo",
+  "title": "MBN Logo",
+  "category": "mbn-blocks",
+  "icon": "format-image",
+  "description": "Site logo from the header/footer template's logo setting, linked to home. Falls back to the site title.",
+  "textdomain": "mbn-theme",
+  "supports": {
+    "html": false
+  },
+  "attributes": {
+    "maxWidth": { "type": "string", "default": "160px" }
+  },
+  "editorScript": "file:./index.js",
+  "render": "file:./render.php"
+}

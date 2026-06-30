@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => '__root__',
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
-        'reference' => null,
+        'pretty_version' => 'dev-master',
+        'version' => 'dev-master',
+        'reference' => '70d6d5ca6e508b5aab8cda6027f4108fe324fa82',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,18 +11,18 @@
     ),
     'versions' => array(
         '__root__' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
-            'reference' => null,
+            'pretty_version' => 'dev-master',
+            'version' => 'dev-master',
+            'reference' => '70d6d5ca6e508b5aab8cda6027f4108fe324fa82',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
             'dev_requirement' => false,
         ),
         'dealerdirect/phpcodesniffer-composer-installer' => array(
-            'pretty_version' => 'v1.2.0',
-            'version' => '1.2.0.0',
-            'reference' => '845eb62303d2ca9b289ef216356568ccc075ffd1',
+            'pretty_version' => 'v1.2.1',
+            'version' => '1.2.1.0',
+            'reference' => '963f0c67bffde0eac41b56be71ac0e8ba132f0bd',
             'type' => 'composer-plugin',
             'install_path' => __DIR__ . '/../dealerdirect/phpcodesniffer-composer-installer',
             'aliases' => array(),
@@ -63,15 +63,6 @@
             'install_path' => __DIR__ . '/../wp-coding-standards/wpcs',
             'aliases' => array(),
             'dev_requirement' => true,
-        ),
-        'yahnis-elsts/plugin-update-checker' => array(
-            'pretty_version' => 'v5.6',
-            'version' => '5.6.0.0',
-            'reference' => 'a2db6871deec989a74e1f90fafc6d58ae526a879',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../yahnis-elsts/plugin-update-checker',
-            'aliases' => array(),
-            'dev_requirement' => false,
         ),
     ),
 );

@@ -20,5 +20,4 @@ get_header();
   ?>
 </main>
 <?php
-get_sidebar();
 get_footer();

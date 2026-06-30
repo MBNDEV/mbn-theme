@@ -1,9 +1,6 @@
 node_modules/
-.husky/
 .vscode/
 build/
-*.hot-update.js
-*.hot-update.json
 .DS_Store
 html_tailwind/*
 .env
@@ -12,3 +9,16 @@ composer.lock
 vendor/
 package-lock.json
 yarn.lock
+plans
+
+bundle/
+
+# Project-specific AI-generated blocks & components.
+# The theme baseline is the core `mbn-` blocks; everything under the `mbn-ai-`
+# namespace is generated per project/design (via /build-design, /build-components)
+# and reset by /cleanup, so it is not committed to the reusable theme.
+src/mbn-ai-*/
+src/components/mbn-ai-*/
+
+# vexp local index (built by the vexp daemon; machine-local)
+.vexp/

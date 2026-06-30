@@ -1,30 +1,12 @@
 <?php
 /**
- * Custom post type: Block Templates (reusable layouts; Header/Footer Template posts drive site chrome via the editor).
+ * Custom post type: Block Templates (reusable layouts inserted via the editor / Remote Template Reuse).
  *
  * @package CustomTheme
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
   exit;
-}
-
-/**
- * Slug for the global Header Template Block Template post.
- *
- * @return string
- */
-function custom_theme_header_template_slug(): string {
-  return 'header-template';
-}
-
-/**
- * Slug for the global Footer Template Block Template post.
- *
- * @return string
- */
-function custom_theme_footer_template_slug(): string {
-  return 'footer-template';
 }
 
 /**
@@ -69,520 +51,6 @@ function custom_theme_register_block_template_post_type(): void {
   );
 }
 add_action( 'init', 'custom_theme_register_block_template_post_type', 5 );
-
-/**
- * Resolve a Block Template post ID by slug.
- *
- * @param string $slug Post name slug.
- * @return int Post ID or 0.
- */
-function custom_theme_get_block_template_id_by_slug( string $slug ): int {
-  if ( '' === $slug ) {
-    return 0;
-  }
-
-  $post = get_page_by_path( $slug, OBJECT, 'mbn_block_template' );
-  if ( $post instanceof \WP_Post ) {
-    return (int) $post->ID;
-  }
-
-  return 0;
-}
-
-/**
- * Resolve a Block Template post ID by slug (any status, including draft and trash).
- *
- * Used to avoid duplicate auto-created templates when a matching post already exists.
- *
- * @param string $slug Post name slug.
- * @return int Post ID or 0.
- */
-function custom_theme_get_block_template_id_by_slug_any_status( string $slug ): int {
-  $slug = sanitize_title( $slug );
-  if ( '' === $slug ) {
-    return 0;
-  }
-
-  $posts = get_posts(
-    array(
-		'post_type'              => 'mbn_block_template',
-		'name'                   => $slug,
-		'post_status'            => 'any',
-		'posts_per_page'         => 1,
-		'fields'                 => 'ids',
-		'suppress_filters'       => true,
-		'update_post_meta_cache' => false,
-		'update_post_term_cache' => false,
-		'no_found_rows'          => true,
-    )
-  );
-
-  if ( empty( $posts ) ) {
-    return 0;
-  }
-
-  return (int) $posts[0];
-}
-
-/**
- * Post IDs to omit from the Template block association picker (global chrome + page template layouts).
- *
- * @return array<int, int>
- */
-function custom_theme_get_block_template_post_ids_excluded_from_template_block(): array {
-  $slugs = array(
-	  custom_theme_header_template_slug(),
-	  custom_theme_footer_template_slug(),
-  );
-
-  if ( function_exists( 'custom_theme_get_layout_template_file_slugs' ) ) {
-    $slugs = array_merge( $slugs, custom_theme_get_layout_template_file_slugs() );
-  }
-
-  $slugs[] = 'blank';
-  $slugs[] = 'sidebar';
-  $slugs[] = 'blank-template';
-  $slugs[] = 'sidebar-template';
-
-  $slugs = array_unique( array_filter( array_map( 'sanitize_title', $slugs ) ) );
-  $ids   = array();
-
-  foreach ( $slugs as $slug ) {
-    $id = custom_theme_get_block_template_id_by_slug_any_status( $slug );
-    if ( $id > 0 ) {
-      $ids[] = $id;
-    }
-  }
-
-  return array_values( array_unique( $ids ) );
-}
-
-/**
- * Load Block Template content from a template-parts PHP file.
- *
- * @param string $template_slug Template slug (e.g., 'header-template' or 'footer-template').
- * @return string Block markup content.
- * @throws Exception If file cannot be loaded.
- */
-function custom_theme_load_template_content_from_file( string $template_slug ): string {
-  $file_path = get_theme_file_path( 'template-parts/' . $template_slug . '.php' );
-
-  if ( ! file_exists( $file_path ) ) {
-    throw new Exception( sprintf( 'Template file not found: %s', esc_html( $file_path ) ) );
-  }
-
-  if ( ! is_readable( $file_path ) ) {
-    throw new Exception( sprintf( 'Template file is not readable: %s. Check file permissions.', esc_html( $file_path ) ) );
-  }
-
-  // Extract rendered content using output buffering.
-  ob_start();
-  // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_include
-  include $file_path;
-  $content = ob_get_clean();
-  $content = trim( $content );
-
-  return $content;
-}
-
-/**
- * Import or update a single block template from file.
- *
- * @param string $slug Template slug.
- * @param string $title Template title.
- * @param string $file_name Template file name (without .php).
- * @param bool   $force Force update if template exists.
- * @return bool True if imported/updated, false if skipped.
- * @throws Exception If import fails.
- */
-function custom_theme_import_single_template( string $slug, string $title, string $file_name, bool $force = false ): bool {
-  $template_id = custom_theme_get_block_template_id_by_slug( $slug );
-  $content     = custom_theme_load_template_content_from_file( $file_name );
-
-  if ( 0 === $template_id ) {
-    // Create new template
-    $result = wp_insert_post(
-      array(
-		  'post_type'    => 'mbn_block_template',
-		  'post_title'   => $title,
-		  'post_name'    => $slug,
-		  'post_status'  => 'publish',
-		  'post_content' => $content,
-      ),
-      true
-    );
-
-    if ( is_wp_error( $result ) ) {
-      throw new Exception( sprintf( 'Failed to create %s: %s', esc_html( $title ), esc_html( $result->get_error_message() ) ) );
-    }
-
-    return true;
-  }
-
-  if ( $force && '' !== $content ) {
-    // Update existing template
-    $result = wp_update_post(
-      array(
-		  'ID'           => $template_id,
-		  'post_content' => $content,
-      )
-    );
-
-    if ( is_wp_error( $result ) ) {
-      throw new Exception( sprintf( 'Failed to update %s: %s', esc_html( $title ), esc_html( $result->get_error_message() ) ) );
-    }
-
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Create default Header Template and Footer Template posts from template-parts files.
- * Run once on theme activation, or manually trigger with 'Sync Templates' button.
- *
- * @param bool $force Force re-sync even if already seeded.
- * @return void
- * @throws Exception If import fails.
- */
-function custom_theme_maybe_seed_default_block_templates( bool $force = false ): void {
-  if ( ! $force && '1' === get_option( 'custom_theme_block_defaults_seeded', '' ) ) {
-    return;
-  }
-
-  if ( ! post_type_exists( 'mbn_block_template' ) ) {
-    throw new Exception( 'Block Template post type is not registered.' );
-  }
-
-  $errors   = array();
-  $imported = 0;
-
-  // Import Header Template
-  try {
-    if ( custom_theme_import_single_template(
-      custom_theme_header_template_slug(),
-      __( 'Header Template', 'mbn-theme' ),
-      'header-template',
-      $force
-    ) ) {
-      ++$imported;
-    }
-  } catch ( Exception $e ) {
-    $errors[] = 'Header Template: ' . $e->getMessage();
-  }
-
-  // Import Footer Template
-  try {
-    if ( custom_theme_import_single_template(
-      custom_theme_footer_template_slug(),
-      __( 'Footer Template', 'mbn-theme' ),
-      'footer-template',
-      $force
-    ) ) {
-      ++$imported;
-    }
-  } catch ( Exception $e ) {
-    $errors[] = 'Footer Template: ' . $e->getMessage();
-  }
-
-  // Report errors if any
-  if ( ! empty( $errors ) ) {
-    $error_message = implode( ' | ', array_map( 'esc_html', $errors ) );
-    if ( 0 === $imported ) {
-      // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
-      throw new Exception( $error_message );
-    }
-    // If some succeeded, throw a warning-level exception
-    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
-    throw new Exception( 'Partial import: ' . $error_message );
-  }
-
-  update_option( 'custom_theme_block_defaults_seeded', '1' );
-}
-add_action( 'init', 'custom_theme_maybe_seed_default_block_templates', 20 );
-
-/**
- * Global site header HTML from the Header Template Block Template post (block editor content).
- *
- * @return string HTML fragment for inside theme header (run through the_content filters).
- */
-function custom_theme_get_global_header_template_output_html(): string {
-  $post_id = custom_theme_get_block_template_id_by_slug( custom_theme_header_template_slug() );
-
-  if ( $post_id <= 0 ) {
-    // Debug: Template not found
-    if ( current_user_can( 'edit_posts' ) && WP_DEBUG ) {
-      return '<!-- Header Template post not found (slug: ' . custom_theme_header_template_slug() . ') -->';
-    }
-    return '';
-  }
-
-  $post = get_post( $post_id );
-  if ( ! $post instanceof \WP_Post ) {
-    return '';
-  }
-
-  if ( 'publish' !== $post->post_status ) {
-    // Debug: Template not published
-    if ( current_user_can( 'edit_posts' ) && WP_DEBUG ) {
-      return '<!-- Header Template exists but is not published (status: ' . $post->post_status . ') -->';
-    }
-    return '';
-  }
-
-  $content = $post->post_content;
-
-  // Parse blocks and render them
-  if ( has_blocks( $content ) ) {
-    $html = do_blocks( $content );
-  } else {
-    $html = apply_filters( 'the_content', $content );
-  }
-
-  // Debug: Empty content
-  if ( '' === trim( wp_strip_all_tags( $html ) ) && current_user_can( 'edit_posts' ) && WP_DEBUG ) {
-    return '<!-- Header Template is published but has no visible content. Edit it at: ' . get_edit_post_link( $post_id ) . ' -->';
-  }
-
-  return is_string( $html ) ? $html : '';
-}
-
-/**
- * Global site footer HTML from the Footer Template Block Template post (block editor content).
- *
- * @return string HTML fragment for inside theme footer (run through the_content filters).
- */
-function custom_theme_get_global_footer_template_output_html(): string {
-  $post_id = custom_theme_get_block_template_id_by_slug( custom_theme_footer_template_slug() );
-
-  if ( $post_id <= 0 ) {
-    // Debug: Template not found
-    if ( current_user_can( 'edit_posts' ) && WP_DEBUG ) {
-      return '<!-- Footer Template post not found (slug: ' . custom_theme_footer_template_slug() . ') -->';
-    }
-    return '';
-  }
-
-  $post = get_post( $post_id );
-  if ( ! $post instanceof \WP_Post ) {
-    return '';
-  }
-
-  if ( 'publish' !== $post->post_status ) {
-    // Debug: Template not published
-    // Debug: Template not published
-    if ( current_user_can( 'edit_posts' ) && WP_DEBUG ) {
-      return '<!-- Footer Template exists but is not published (status: ' . $post->post_status . ') -->';
-    }
-    return '';
-  }
-
-  $content = $post->post_content;
-
-  // Parse blocks and render them
-  if ( has_blocks( $content ) ) {
-    $html = do_blocks( $content );
-  } else {
-    $html = apply_filters( 'the_content', $content );
-  }
-
-  // Debug: Empty content
-  if ( '' === trim( wp_strip_all_tags( $html ) ) ) {
-    // Log: Empty footer
-    if ( current_user_can( 'edit_posts' ) && WP_DEBUG ) {
-      return '<!-- Footer Template is published but has no visible content. Edit it at: ' . get_edit_post_link( $post_id ) . ' -->';
-    }
-  }
-
-  return is_string( $html ) ? $html : '';
-}
-
-/**
- * Admin list table: add Badges column for Block Templates.
- *
- * @param array<string, string> $columns Columns.
- * @return array<string, string>
- */
-function custom_theme_block_template_posts_columns( array $columns ): array {
-  $out = array();
-  foreach ( $columns as $id => $label ) {
-    $out[ $id ] = $label;
-    if ( 'title' === $id ) {
-      $out['custom_theme_badges'] = __( 'Badges', 'mbn-theme' );
-    }
-  }
-
-  return $out;
-}
-
-/**
- * Admin list table: output badge markup for Block Templates.
- *
- * @param string $column Column key.
- * @param int    $post_id Post ID.
- * @return void
- */
-function custom_theme_block_template_posts_custom_column( string $column, int $post_id ): void {
-  if ( 'custom_theme_badges' !== $column ) {
-    return;
-  }
-
-  $post = get_post( $post_id );
-  if ( ! $post instanceof \WP_Post || 'mbn_block_template' !== $post->post_type ) {
-    return;
-  }
-
-  $slug = (string) $post->post_name;
-
-  if ( custom_theme_header_template_slug() === $slug ) {
-    echo '<span class="carbon-template-badge carbon-template-badge--global">' . esc_html__( 'Global', 'mbn-theme' ) . '</span> ';
-    echo '<span class="carbon-template-badge carbon-template-badge--chrome">' . esc_html__( 'Header', 'mbn-theme' ) . '</span>';
-    return;
-  }
-
-  if ( custom_theme_footer_template_slug() === $slug ) {
-    echo '<span class="carbon-template-badge carbon-template-badge--global">' . esc_html__( 'Global', 'mbn-theme' ) . '</span> ';
-    echo '<span class="carbon-template-badge carbon-template-badge--chrome">' . esc_html__( 'Footer', 'mbn-theme' ) . '</span>';
-    return;
-  }
-
-  if ( custom_theme_block_slug_is_page_template_layout( $slug ) ) {
-    echo '<span class="carbon-template-badge carbon-template-badge--page">' . esc_html__( 'Page Templates', 'mbn-theme' ) . '</span>';
-    return;
-  }
-
-  echo '&mdash;';
-}
-
-/**
- * Admin: styles for Block Template list badges.
- *
- * @return void
- */
-function custom_theme_block_template_admin_list_styles(): void {
-  $screen = get_current_screen();
-  if ( ! $screen || 'edit-mbn_block_template' !== $screen->id ) {
-    return;
-  }
-
-  echo '<style>
-    .column-custom_theme_badges { width: 14em; }
-    .carbon-template-badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 3px;
-      font-size: 11px;
-      font-weight: 600;
-      line-height: 1.6;
-      vertical-align: middle;
-    }
-    .carbon-template-badge--global {
-      background: #dcdcde;
-      color: #1d2327;
-    }
-    .carbon-template-badge--chrome {
-      background: #f0f0f1;
-      color: #50575e;
-    }
-    .carbon-template-badge--page {
-      background: #d6f0e8;
-      color: #0a4a3a;
-    }
-  </style>';
-}
-
-add_filter( 'manage_mbn_block_template_posts_columns', 'custom_theme_block_template_posts_columns' );
-add_action( 'manage_mbn_block_template_posts_custom_column', 'custom_theme_block_template_posts_custom_column', 10, 2 );
-add_action( 'admin_head', 'custom_theme_block_template_admin_list_styles' );
-
-/**
- * Whether this Block Template is global chrome or a theme page layout (must not be moved to Trash from published state).
- *
- * @param int $post_id Post ID.
- * @return bool
- */
-function custom_theme_block_template_post_is_protected_from_trash( int $post_id ): bool {
-  $post = get_post( $post_id );
-  if ( ! $post instanceof \WP_Post || 'mbn_block_template' !== $post->post_type ) {
-    return false;
-  }
-
-  $slug = (string) $post->post_name;
-
-  if ( custom_theme_header_template_slug() === $slug ) {
-    return true;
-  }
-
-  if ( custom_theme_footer_template_slug() === $slug ) {
-    return true;
-  }
-
-  if ( function_exists( 'custom_theme_block_slug_is_page_template_layout' ) && custom_theme_block_slug_is_page_template_layout( $slug ) ) {
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Block trashing protected Block Templates; allow permanent delete only when already in trash.
- *
- * @param array<int, string> $caps    Primitive caps for the user.
- * @param string             $cap     Capability name.
- * @param int                $user_id User ID.
- * @param array<int, mixed>  $args    Arguments (post ID for delete_post).
- * @return array<int, string>
- */
-function custom_theme_block_template_map_meta_cap_protect_trash( array $caps, string $cap, int $user_id, array $args ): array {
-  if ( 'delete_post' !== $cap || empty( $args[0] ) ) {
-    return $caps;
-  }
-
-  $post_id = (int) $args[0];
-  if ( ! custom_theme_block_template_post_is_protected_from_trash( $post_id ) ) {
-    return $caps;
-  }
-
-  $post = get_post( $post_id );
-  if ( ! $post instanceof \WP_Post ) {
-    return $caps;
-  }
-
-  if ( 'trash' === $post->post_status ) {
-    return $caps;
-  }
-
-  return array( 'do_not_allow' );
-}
-
-/**
- * Remove Trash row action for protected Block Templates (not already in trash).
- *
- * @param array<string, string> $actions Row actions.
- * @param \WP_Post              $post   Post object.
- * @return array<string, string>
- */
-function custom_theme_block_template_row_actions_remove_trash( array $actions, \WP_Post $post ): array {
-  if ( 'mbn_block_template' !== $post->post_type ) {
-    return $actions;
-  }
-
-  if ( 'trash' === $post->post_status ) {
-    return $actions;
-  }
-
-  if ( ! custom_theme_block_template_post_is_protected_from_trash( $post->ID ) ) {
-    return $actions;
-  }
-
-  unset( $actions['trash'] );
-
-  return $actions;
-}
-
-add_filter( 'map_meta_cap', 'custom_theme_block_template_map_meta_cap_protect_trash', 10, 4 );
-add_filter( 'post_row_actions', 'custom_theme_block_template_row_actions_remove_trash', 10, 2 );
 
 /**
  * Exclude block templates from the WordPress core sitemap.
@@ -670,3 +138,304 @@ add_filter( 'wp_robots', 'custom_theme_block_template_robots_noindex' );
 add_action( 'template_redirect', 'custom_theme_block_template_block_public_view' );
 add_filter( 'wpseo_sitemap_exclude_post_type', 'custom_theme_block_template_yoast_exclude_sitemap', 10, 2 );
 add_filter( 'rank_math/sitemap/exclude_post_type', 'custom_theme_block_template_rank_math_exclude_sitemap', 10, 2 );
+
+/* ───────────────────────── Header / Footer part templates ───────────────────────── */
+
+/**
+ * Slugs of the default part templates rendered into the header/footer tags.
+ *
+ * @return array<int, string>
+ */
+function mbn_part_template_slugs(): array {
+  return array( 'header', 'footer' );
+}
+
+/**
+ * Get a part template post by slug (header|footer).
+ *
+ * @param string $slug Template slug.
+ * @return WP_Post|null
+ */
+function mbn_get_part_template( string $slug ) {
+  $posts = get_posts(
+    array(
+		'post_type'        => 'mbn_block_template',
+		'name'             => $slug,
+		'post_status'      => 'publish',
+		'numberposts'      => 1,
+		'suppress_filters' => false,
+    )
+  );
+
+  return ! empty( $posts ) ? $posts[0] : null;
+}
+
+/**
+ * Render a part template's blocks, exposing its ID so mbn-logo/mbn-menu can
+ * read the template's logo/menu meta.
+ *
+ * @param string $slug Template slug (header|footer).
+ * @return string Rendered HTML ('' when the template is missing/empty).
+ */
+function mbn_render_part_template( string $slug ): string {
+  $post = mbn_get_part_template( $slug );
+  if ( ! $post instanceof WP_Post || '' === trim( (string) $post->post_content ) ) {
+    return '';
+  }
+
+  $GLOBALS['mbn_current_template_id'] = (int) $post->ID;
+  $html                               = do_blocks( $post->post_content );
+  unset( $GLOBALS['mbn_current_template_id'] );
+
+  return $html;
+}
+
+/**
+ * The chosen logo attachment ID for a part template.
+ *
+ * @param int $template_id Template post ID.
+ * @return int
+ */
+function mbn_get_template_logo_id( int $template_id ): int {
+  return (int) get_post_meta( $template_id, '_mbn_template_logo_id', true );
+}
+
+/**
+ * The ordered menu IDs selected for a part template.
+ *
+ * @param int $template_id Template post ID.
+ * @return array<int, int>
+ */
+function mbn_get_template_menus( int $template_id ): array {
+  $menus = get_post_meta( $template_id, '_mbn_template_menus', true );
+
+  return is_array( $menus ) ? array_values( array_map( 'intval', $menus ) ) : array();
+}
+
+/**
+ * Default block markup for the seeded part templates.
+ *
+ * @return array<string, array{title:string, content:string}>
+ */
+function mbn_default_part_templates(): array {
+  $header = "<!-- wp:mbn-theme/mbn-section {\"align\":\"full\",\"paddingTop\":\"1rem\",\"paddingBottom\":\"1rem\"} -->\n"
+    . "<!-- wp:mbn-theme/mbn-columns {\"columnCount\":2,\"align\":\"full\"} -->\n"
+    . "<!-- wp:mbn-theme/mbn-column -->\n<!-- wp:mbn-theme/mbn-logo /-->\n<!-- /wp:mbn-theme/mbn-column -->\n"
+    . "<!-- wp:mbn-theme/mbn-column -->\n<!-- wp:mbn-theme/mbn-menu {\"slot\":1} /-->\n<!-- /wp:mbn-theme/mbn-column -->\n"
+    . "<!-- /wp:mbn-theme/mbn-columns -->\n"
+    . '<!-- /wp:mbn-theme/mbn-section -->';
+
+  $footer = "<!-- wp:mbn-theme/mbn-section {\"align\":\"full\",\"paddingTop\":\"2rem\",\"paddingBottom\":\"2rem\"} -->\n"
+    . "<!-- wp:mbn-theme/mbn-menu {\"slot\":1} /-->\n"
+    . '<!-- /wp:mbn-theme/mbn-section -->';
+
+  return array(
+	  'header' => array(
+		  'title'   => __( 'Header', 'mbn-theme' ),
+		  'content' => $header,
+	  ),
+	  'footer' => array(
+		  'title'   => __( 'Footer', 'mbn-theme' ),
+		  'content' => $footer,
+	  ),
+  );
+}
+
+/**
+ * Seed the default Header/Footer block templates once, if missing.
+ *
+ * @return void
+ */
+function mbn_seed_default_part_templates(): void {
+  if ( get_option( 'mbn_default_parts_seeded' ) ) {
+    return;
+  }
+
+  foreach ( mbn_default_part_templates() as $slug => $data ) {
+    if ( mbn_get_part_template( $slug ) instanceof WP_Post ) {
+      continue;
+    }
+
+    wp_insert_post(
+      array(
+		  'post_type'    => 'mbn_block_template',
+		  'post_status'  => 'publish',
+		  'post_title'   => $data['title'],
+		  'post_name'    => $slug,
+		  'post_content' => $data['content'],
+      )
+    );
+  }
+
+  update_option( 'mbn_default_parts_seeded', 1 );
+}
+add_action( 'after_switch_theme', 'mbn_seed_default_part_templates' );
+add_action( 'admin_init', 'mbn_seed_default_part_templates' );
+
+/**
+ * Register the Header/Footer settings meta box on block templates.
+ *
+ * @return void
+ */
+function mbn_register_part_meta_box(): void {
+  add_meta_box(
+    'mbn_template_parts',
+    __( 'Header / Footer Settings', 'mbn-theme' ),
+    'mbn_render_part_meta_box',
+    'mbn_block_template',
+    'side',
+    'default'
+  );
+}
+add_action( 'add_meta_boxes', 'mbn_register_part_meta_box' );
+
+/**
+ * Render the Header/Footer settings meta box (logo + menus).
+ *
+ * @param WP_Post $post Current template post.
+ * @return void
+ */
+function mbn_render_part_meta_box( $post ): void {
+  wp_nonce_field( 'mbn_template_parts_save', 'mbn_template_parts_nonce' );
+
+  $logo_id   = mbn_get_template_logo_id( (int) $post->ID );
+  $selected  = mbn_get_template_menus( (int) $post->ID );
+  $nav_menus = wp_get_nav_menus();
+  ?>
+  <div class="mbn-template-parts">
+    <p class="mbn-part-field">
+      <label class="block font-semibold"><?php esc_html_e( 'Logo', 'mbn-theme' ); ?></label>
+      <span class="mbn-logo-preview" style="display:block;margin:6px 0;">
+        <?php if ( $logo_id ) : ?>
+          <?php echo wp_get_attachment_image( $logo_id, 'medium', false, array( 'style' => 'max-width:100%;height:auto;' ) ); ?>
+        <?php endif; ?>
+      </span>
+      <input type="hidden" class="mbn-logo-id" name="mbn_template_logo_id" value="<?php echo esc_attr( (string) $logo_id ); ?>" />
+      <button type="button" class="button mbn-select-logo"><?php esc_html_e( 'Select logo', 'mbn-theme' ); ?></button>
+      <button type="button" class="button-link mbn-remove-logo" style="<?php echo $logo_id ? '' : 'display:none;'; ?>"><?php esc_html_e( 'Remove', 'mbn-theme' ); ?></button>
+    </p>
+
+    <p class="mbn-part-field" style="margin-top:14px;">
+      <label class="block font-semibold"><?php esc_html_e( 'Menus', 'mbn-theme' ); ?></label>
+      <span class="description" style="display:block;margin:2px 0 6px;">
+        <?php esc_html_e( 'Checked menus map to MBN Menu blocks by slot, in order. Manage menus under Appearance → Menus.', 'mbn-theme' ); ?>
+      </span>
+      <?php if ( empty( $nav_menus ) ) : ?>
+        <em><?php esc_html_e( 'No menus yet. Create one under Appearance → Menus.', 'mbn-theme' ); ?></em>
+      <?php else : ?>
+        <?php
+        $slot = 1;
+        foreach ( $nav_menus as $menu ) :
+          $checked = in_array( (int) $menu->term_id, $selected, true );
+          ?>
+          <label style="display:block;margin:3px 0;">
+            <input type="checkbox" name="mbn_template_menus[]" value="<?php echo esc_attr( (string) $menu->term_id ); ?>" <?php checked( $checked ); ?> />
+            <?php echo esc_html( $menu->name ); ?>
+            <?php if ( $checked ) : ?>
+              <code>slot <?php echo esc_html( (string) ( array_search( (int) $menu->term_id, $selected, true ) + 1 ) ); ?></code>
+            <?php endif; ?>
+          </label>
+          <?php
+          ++$slot;
+        endforeach;
+        ?>
+      <?php endif; ?>
+    </p>
+  </div>
+  <?php
+}
+
+/**
+ * Save the Header/Footer settings meta box.
+ *
+ * @param int $post_id Template post ID.
+ * @return void
+ */
+function mbn_save_part_meta_box( $post_id ): void {
+  if ( ! isset( $_POST['mbn_template_parts_nonce'] ) ) {
+    return;
+  }
+
+  $nonce = sanitize_text_field( wp_unslash( $_POST['mbn_template_parts_nonce'] ) );
+  if ( ! wp_verify_nonce( $nonce, 'mbn_template_parts_save' ) ) {
+    return;
+  }
+
+  if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+    return;
+  }
+
+  if ( ! current_user_can( 'edit_post', $post_id ) ) {
+    return;
+  }
+
+  $logo_id = isset( $_POST['mbn_template_logo_id'] ) ? absint( wp_unslash( $_POST['mbn_template_logo_id'] ) ) : 0;
+  if ( $logo_id ) {
+    update_post_meta( $post_id, '_mbn_template_logo_id', $logo_id );
+  } else {
+    delete_post_meta( $post_id, '_mbn_template_logo_id' );
+  }
+
+  $raw_menus = isset( $_POST['mbn_template_menus'] ) ? (array) wp_unslash( $_POST['mbn_template_menus'] ) : array();
+  $menus     = mbn_sanitize_template_menu_ids( $raw_menus );
+
+  if ( ! empty( $menus ) ) {
+    update_post_meta( $post_id, '_mbn_template_menus', $menus );
+  } else {
+    delete_post_meta( $post_id, '_mbn_template_menus' );
+  }
+}
+add_action( 'save_post_mbn_block_template', 'mbn_save_part_meta_box' );
+
+/**
+ * Sanitize submitted menu IDs to existing nav menus, preserving order.
+ *
+ * @param array<int, mixed> $raw Raw submitted menu IDs.
+ * @return array<int, int>
+ */
+function mbn_sanitize_template_menu_ids( array $raw ): array {
+  $menus = array();
+  foreach ( $raw as $menu_id ) {
+    $menu_id = absint( $menu_id );
+    if ( $menu_id && is_nav_menu( $menu_id ) ) {
+      $menus[] = $menu_id;
+    }
+  }
+
+  return $menus;
+}
+
+/**
+ * Enqueue the media picker + helper script for the block-template meta box.
+ *
+ * @param string $hook Current admin page hook.
+ * @return void
+ */
+function mbn_part_meta_box_assets( string $hook ): void {
+  if ( 'post.php' !== $hook && 'post-new.php' !== $hook ) {
+    return;
+  }
+
+  $screen = get_current_screen();
+  if ( ! $screen || 'mbn_block_template' !== $screen->post_type ) {
+    return;
+  }
+
+  wp_enqueue_media();
+  wp_enqueue_script(
+    'mbn-template-parts',
+    get_theme_file_uri( 'assets/js/mbn-template-parts.js' ),
+    array( 'jquery' ),
+    '1.0.0',
+    true
+  );
+  wp_localize_script(
+    'mbn-template-parts',
+    'mbnTemplateParts',
+    array(
+		'title'  => __( 'Select logo', 'mbn-theme' ),
+		'button' => __( 'Use as logo', 'mbn-theme' ),
+    )
+  );
+}
+add_action( 'admin_enqueue_scripts', 'mbn_part_meta_box_assets' );

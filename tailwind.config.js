@@ -2,49 +2,68 @@
 module.exports = {
   content: [
     './*.php',
-    './blocks/**/*.php',
-    './blocks/**/*.js',
-    './blocks/**/*.jsx',
-    './blocks/**/*.css',
+    './inc/**/*.php',
+    './src/**/*.php',
+    './src/**/*.js',
     './template-parts/**/*.php',
+    './page-templates/**/*.php',
+    './assets/js/**/*.js',
     './resources/**/*.css',
   ],
   theme: {
     extend: {
       colors: {
-        cream: '#F9F5EE',
-        'cream-light': '#FFF6E5',
-        'gold-light': '#FCE5B0',
-        gold: '#B89352',
-        'gold-dark': '#6B4502',
-        'dark-text': '#25272B',
-        'footer-bg': '#191919',
-        'paragraph-gray': '#B2B2B2',
-        'card-cream': '#F5F1E8',
-        'card-gold': '#FFF4D9',
-        'card-beige': '#F8F5F0',
-        'check-green': '#7CAA6D',
-        'divider-gold': '#CEB270',
-        'card-label': '#3A3A3A',
-        'intro-bg': '#EFEBE3',
-        'mission-text': 'rgba(0, 0, 0, 0.20)',
+        'scheme-1': 'var(--mbn-color-scheme-1)',
+        'scheme-2': 'var(--mbn-color-scheme-2)',
+        'scheme-3': 'var(--mbn-color-scheme-3)',
+        'scheme-4': 'var(--mbn-color-scheme-4)',
+        'scheme-5': 'var(--mbn-color-scheme-5)',
+        'scheme-6': 'var(--mbn-color-scheme-6)',
+        'scheme-7': 'var(--mbn-color-scheme-7)',
+        'scheme-8': 'var(--mbn-color-scheme-8)',
+        'mbn-primary': 'var(--mbn-color-primary, var(--mbn-color-scheme-1))',
+        'mbn-secondary': 'var(--mbn-color-secondary, var(--mbn-color-scheme-2))',
       },
       fontFamily: {
-        sofia: ['"Sofia Sans"', 'sans-serif'],
-        poppins: ['"Poppins"', 'sans-serif'],
-        inter: ['"Inter"', 'sans-serif'],
+        primary: 'var(--mbn-font-primary)',
+        secondary: 'var(--mbn-font-secondary)',
       },
-      letterSpacing: {
-        'hero': '-0.74px',        // For h1 hero headings
-        'heading': '-0.56px',     // For large h2 headings
-        'subheading': '-0.28px',  // For medium h4 subheadings
-        'body': '-0.18px',        // For body text/paragraphs
-        'mission': '-0.4px',      // For mission section text
-        'display': '-0.8px',      // For extra large display text
-        'label': '-0.24px',       // For small labels
-        'title': '-0.32px',       // For medium titles
+      fontSize: {
+        'mbn-h1': 'var(--mbn-size-h1)',
+        'mbn-h2': 'var(--mbn-size-h2)',
+        'mbn-h3': 'var(--mbn-size-h3)',
+        'mbn-h4': 'var(--mbn-size-h4)',
+        'mbn-h5': 'var(--mbn-size-h5)',
+        'mbn-h6': 'var(--mbn-size-h6)',
+        'mbn-body': 'var(--mbn-size-body)',
+      },
+      borderRadius: {
+        mbn: 'var(--mbn-radius)',
+      },
+      maxWidth: {
+        'mbn-container': 'var(--mbn-container-width)',
       },
     },
   },
+  // Scheme colors / fonts are used from post_content (which Tailwind does not
+  // scan), so keep their utilities (+ common variants) always compiled.
+  safelist: [
+    {
+      pattern: /^(bg|text|border)-scheme-[1-8]$/,
+      variants: [ 'hover', 'focus', 'group-hover', 'md', 'lg' ],
+    },
+    {
+      pattern: /^(bg|text|border)-(mbn-primary|mbn-secondary)$/,
+      variants: [ 'hover', 'focus', 'group-hover' ],
+    },
+    {
+      pattern: /^(font-primary|font-secondary)$/,
+    },
+    {
+      pattern: /^text-mbn-(h[1-6]|body)$/,
+    },
+    'rounded-mbn',
+    'max-w-mbn-container',
+  ],
   plugins: [],
 };

@@ -1,6 +1,6 @@
 <?php
 /**
- * Singular Block Template CPT: blank-style shell only (main column + widgets below).
+ * Singular Block Template CPT: blank-style shell only (main content column).
  *
  * Included from `singular.php` when viewing a single Block Template post.
  *
