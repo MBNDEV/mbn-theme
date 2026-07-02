@@ -29,6 +29,20 @@
 - **Modifying existing blocks is allowed** when a block lacks a needed setting/markup —
   edit the block (attribute + control + render, then `npm run build`), backward-
   compatibly, instead of inline styles or duplicate markup.
+- **Every heading tag is editable via the shared `TagControl` (ENSURED).** Each heading
+  a block renders binds a `*Tag` attribute (`titleTag`, `itemTitleTag`, `headingTag`) to
+  the shared `TagControl` (`src/shared/tag-control.js`) and renders through
+  `mbn_tag( $attributes['titleTag'] ?? '', 'h2' )` — visual size stays a `text-mbn-h*`
+  utility chosen independently, so editors can fix the document outline without
+  changing the look. Defaults: `h1` hero title (one per page), `h2` section titles,
+  `h3` card titles.
+- **Maps modules use the Google Maps API key from the preset.** The key lives in
+  Appearance → MBN Theme → Integrations (`mbn_setting( 'maps_api_key' )`) — never
+  hardcoded in a block. Map blocks expose a `mapMode` (`google` | `image`): `google`
+  renders a Maps Embed API iframe (`https://www.google.com/maps/embed/v1/place?key=…&q=…&zoom=…`,
+  lazy-loaded, rounded like the design) and **falls back to the static map image
+  whenever the key or query is empty** — the static image attribute is always kept as
+  the fallback. Restrict the key by HTTP referrer in the Google Cloud console.
 - Accessibility: semantic landmarks, labels/alt text, color contrast, keyboard focus.
 - Images: render with `wp_get_attachment_image()` (responsive `srcset`, lazy-load).
 - **All design assets** (images, backgrounds, videos, vectors, icons) live in the WP

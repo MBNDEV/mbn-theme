@@ -565,109 +565,33 @@ function mbn_content_admin_export_download(): void {
   exit;
 }
 add_action( 'admin_post_mbn_content_export', 'mbn_content_admin_export_download' );
-
 /**
- * Render the Import form above the post list (and any import result notice).
+ * Enqueue the Import / Export editor sidebar (build/content-io.js). It sits
+ * beside the Remote Templates sidebar icon; import always applies the JSON to
+ * the CURRENT post via the mbn/v1 REST routes.
  *
  * @return void
  */
-function mbn_content_admin_import_form(): void {
-  $screen = get_current_screen();
-  if ( ! $screen || 'edit' !== $screen->base || ! current_user_can( 'edit_posts' ) ) {
+function mbn_content_io_enqueue_editor_assets(): void {
+  $screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+  if ( ! $screen || 'post' !== $screen->base ) {
     return;
   }
 
-  // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-only result notice.
-  $result = isset( $_GET['mbn_import'] ) ? sanitize_key( wp_unslash( $_GET['mbn_import'] ) ) : '';
-  if ( 'ok' === $result ) {
-    // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-only.
-    $count = isset( $_GET['mbn_count'] ) ? absint( wp_unslash( $_GET['mbn_count'] ) ) : 0;
-    echo '<div class="notice notice-success is-dismissible"><p>' . esc_html( sprintf( /* translators: %d: number of posts */ _n( 'Imported %d post.', 'Imported %d posts.', $count, 'mbn-theme' ), $count ) ) . '</p></div>';
-  } elseif ( 'badjson' === $result ) {
-    echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__( 'Import failed: the file was not valid JSON.', 'mbn-theme' ) . '</p></div>';
-  } elseif ( 'nofile' === $result ) {
-    echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__( 'Import failed: no file was selected.', 'mbn-theme' ) . '</p></div>';
-  }
-  ?>
-  <div class="notice notice-info mbn-content-import">
-    <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 0;">
-      <input type="hidden" name="action" value="mbn_content_import" />
-      <input type="hidden" name="post_type" value="<?php echo esc_attr( $screen->post_type ); ?>" />
-      <?php wp_nonce_field( 'mbn_content_import' ); ?>
-      <strong><?php esc_html_e( 'Import post (JSON):', 'mbn-theme' ); ?></strong>
-      <input type="file" name="mbn_import_file" accept="application/json,.json" required />
-      <button type="submit" class="button button-primary"><?php esc_html_e( 'Import', 'mbn-theme' ); ?></button>
-    </form>
-  </div>
-  <?php
-}
-add_action( 'admin_notices', 'mbn_content_admin_import_form' );
-
-/**
- * Read + decode the uploaded import file into payload(s).
- *
- * @return array{items?: array<int, mixed>, error?: string}
- */
-function mbn_content_read_import_upload(): array {
-  // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified by the caller (mbn_content_admin_import_handler).
-  if ( empty( $_FILES['mbn_import_file']['tmp_name'] ) ) {
-    return array( 'error' => 'nofile' );
-  }
-  // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- nonce verified by the caller; temp path used only to read the upload.
-  $tmp = wp_unslash( $_FILES['mbn_import_file']['tmp_name'] );
-  // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- reading the uploaded temp file.
-  $json = is_string( $tmp ) && is_uploaded_file( $tmp ) ? file_get_contents( $tmp ) : '';
-  $data = json_decode( (string) $json, true );
-  if ( ! is_array( $data ) ) {
-    return array( 'error' => 'badjson' );
-  }
-  $items = ( isset( $data['post_content'] ) || isset( $data['post_id'] ) ) ? array( $data ) : $data;
-  return array( 'items' => $items );
-}
-
-/**
- * Handle the uploaded Import JSON (single payload or an array) and upsert.
- *
- * @return void
- */
-function mbn_content_admin_import_handler(): void {
-  if ( ! current_user_can( 'edit_posts' ) ) {
-    wp_die( esc_html__( 'You are not allowed to import posts.', 'mbn-theme' ), '', array( 'response' => 403 ) );
-  }
-  check_admin_referer( 'mbn_content_import' );
-
-  $post_type = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : 'post';
-  $redirect  = admin_url( 'edit.php?post_type=' . $post_type );
-
-  $upload = mbn_content_read_import_upload();
-  if ( isset( $upload['error'] ) ) {
-    wp_safe_redirect( add_query_arg( 'mbn_import', $upload['error'], $redirect ) );
-    exit;
+  $script_path = get_theme_file_path( 'build/content-io.js' );
+  $asset_path  = get_theme_file_path( 'build/content-io.asset.php' );
+  if ( ! file_exists( $script_path ) || ! file_exists( $asset_path ) ) {
+    return;
   }
 
-  $new_ids = array();
-  foreach ( $upload['items'] as $item ) {
-    $res = mbn_content_import( (array) $item );
-    if ( ! is_wp_error( $res ) ) {
-      $new_ids[] = (int) $res['post_id'];
-    }
-  }
+  $asset = require $asset_path;
 
-  if ( 1 === count( $new_ids ) ) {
-    $edit = get_edit_post_link( $new_ids[0], 'url' );
-    if ( $edit ) {
-      $redirect = $edit;
-    }
-  }
-  wp_safe_redirect(
-    add_query_arg(
-      array(
-		  'mbn_import' => 'ok',
-		  'mbn_count'  => count( $new_ids ),
-      ),
-      $redirect
-    )
+  wp_enqueue_script(
+    'mbn-content-io-editor',
+    get_theme_file_uri( 'build/content-io.js' ),
+    $asset['dependencies'],
+    $asset['version'],
+    true
   );
-  exit;
 }
-add_action( 'admin_post_mbn_content_import', 'mbn_content_admin_import_handler' );
+add_action( 'enqueue_block_editor_assets', 'mbn_content_io_enqueue_editor_assets' );

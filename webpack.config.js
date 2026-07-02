@@ -18,6 +18,7 @@ module.exports = {
 		return {
 			...base,
 			'template-reuse': './src/template-reuse/index.js',
+			'content-io': './src/content-io/index.js',
 		};
 	},
 };

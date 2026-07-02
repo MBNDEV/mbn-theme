@@ -1,0 +1,298 @@
+---
+description: Figma Design-System Rules (mbn-theme)
+globs:
+alwaysApply: true
+---
+<!-- AUTO-GENERATED from .claude/ by scripts/sync-ai-config.sh — DO NOT EDIT. Edit the .claude/ source and re-run the sync. -->
+
+# Figma Design-System Rules (mbn-theme)
+
+How to translate Figma designs into this WordPress/Gutenberg theme via the Figma MCP.
+Read this **before** calling `get_design_context` / `get_variable_defs` / `download_assets`.
+The theme has no React/CSS-Modules/Storybook front end — it renders **native
+server-rendered Gutenberg blocks styled with Tailwind + `--mbn-*` CSS variables**. Map
+Figma primitives onto the constructs below; do **not** invent a parallel token or
+component system.
+
+---
+
+## 1. Token Definitions
+
+**Single source of truth:** the `mbn_settings` WordPress option (Appearance → **MBN
+Theme**, not the Customizer). Sanitizers + emitters live in
+`inc/includes-theme-settings.php`; `mbn_build_css_variables()` prints a `<style>` block
+of `--mbn-*` variables into `:root` (front end + editor canvas).
+
+- **Format:** runtime CSS custom properties, not a JSON token file. There is **no
+  Style Dictionary / token-transform build.** Figma variables map to `--mbn-*` vars:
+
+| Figma token | Theme variable | Notes |
+|---|---|---|
+| Color styles / variables | `--mbn-color-scheme-1..8` | stored as hex in settings, **emitted as `rgba()`** via `mbn_hex_to_rgba()`; also `--mbn-color-primary`/`--mbn-color-secondary` |
+| Primary/display font | `--mbn-font-primary` | from the **WordPress Fonts Library** (custom-installed families only) |
+| Body font | `--mbn-font-secondary` | |
+| Fallback | `--mbn-font-fallback` | `@font-face` with `size-adjust`/`ascent`/`descent`/`line-gap` overrides |
+| Heading sizes | `--mbn-size-h1..h6`, `--mbn-size-body` | **responsive**: mobile base in `:root`, tablet `@media(min-width:768px)`, desktop `@media(min-width:1024px)` (`mbn_build_typography_media()`) |
+| Heading weights | `--mbn-weight-h1..h6`, `--mbn-weight-body` | |
+| Container | `--mbn-container-width` | |
+| Corner radius | `--mbn-radius` (+ `.mbn-radius` utility) | |
+
+- **Tablet/mobile heading sizes auto-reduce** from the desktop value, never below the
+  paragraph size; the paragraph size stays fixed (`mbn_scale_typography_size()`).
+- **When importing Figma tokens:** update the `mbn_settings` option / preset UI (or the
+  `/build-design` flow drives the preset from the design). Never hardcode a Figma hex or
+  px size into a block when a `--mbn-*` variable exists.
+
+---
+
+## 2. Component Library
+
+Two tiers, both **native Gutenberg blocks** (no Storybook, no React component export):
+
+- **Reusable components** → `src/components/<name>/` with the **`mbn-ai-`** prefix
+  (e.g. `mbn-ai-button`, `mbn-ai-pattern`, `mbn-ai-vector-line`, `mbn-ai-bg-media`,
+  `mbn-ai-icon`). Attribute-driven, generic, deduped. Import shared pieces from
+  `../../shared/…`. **Map a Figma reusable component → one `mbn-ai-` component block.**
+- **Sections / composites** → `src/<name>/` (e.g. `mbn-ai-hero`, `mbn-ai-faq`,
+  `mbn-ai-footer`). They **compose** components via `do_blocks()` rather than
+  duplicating markup:
+
+  ```php
+  // src/mbn-ai-hero/render.php — compose the button component, don't reinvent it
+  echo do_blocks( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in component render.
+    '<!-- wp:mbn-theme/mbn-ai-button ' . wp_json_encode( array(
+      'label' => $cta_label, 'href' => $cta_href, 'variant' => 'accent',
+    ) ) . ' /-->'
+  );
+  ```
+
+- **Layout primitives** (theme-native, `mbn-` not `mbn-ai-`): `mbn-section`,
+  `mbn-container`, `mbn-columns`, `mbn-column`. Build a custom column block for ratios
+  the existing ones can't express (e.g. 1/3).
+- **Dynamic blocks:** `mbn-logo`, `mbn-menu` (server-rendered; editor previews via
+  `ServerSideRender` for parity).
+- **`mbn-ai-button` vocabulary** (extend, never fork): variants `primary` (scheme-1),
+  `tertiary` (outline), `dark` (scheme-2), `deep` (#084c74), `cyan` (scheme-3 +
+  #084c74 border), `light` (white outline); sizes `sm`/`base`/`md`/`lg`; plus
+  `emphasize` (extrabold), `fullWidth`, `newTab` and a trailing `iconId`. Hover states
+  live in `resources/css/app.css` `@layer components` via `color-mix()` so they track
+  the preset schemes.
+- **Component documentation = the `ai-blocks` registry**
+  (`.claude/skills/ai-blocks/SKILL.md`): the live inventory of every `mbn-ai-` block
+  with its attributes, plus the project's media/menu/form IDs. There is no Storybook —
+  read the registry **before building** and add a row after.
+- **Never reimplement an existing component** — dedupe against `src/components/*` and
+  the registry first (`/build-components` enforces this).
+
+### Block anatomy (each block dir)
+`block.json` + `index.js` (`registerBlockType`) + `edit.js` (JSX `Edit`) + `render.php`
+(server render). Example `block.json`:
+
+```json
+{
+  "apiVersion": 3,
+  "name": "mbn-theme/mbn-ai-button",
+  "category": "mbn-blocks",
+  "supports": { "html": false, "inserter": true },
+  "attributes": {
+    "label":    { "type": "string",  "default": "Get a quote today" },
+    "variant":  { "type": "string",  "default": "primary" },
+    "size":     { "type": "string",  "default": "md" },
+    "titleTag": { "type": "string",  "default": "h2" }
+  },
+  "editorScript": "file:./index.js",
+  "render": "file:./render.php"
+}
+```
+
+Blocks are **dynamic**: `index.js` registers with the shared `NullSave`, `edit.js`
+renders `InspectorControls` + a live `ServerPreview`, `render.php` is the single
+source of markup. Every heading is tag-selectable — a `*Tag` attribute (`titleTag`,
+`itemTitleTag`, `headingTag`) bound to the shared `TagControl`, rendered through the
+`mbn_tag()` helper:
+
+```php
+$title_tag = function_exists( 'mbn_tag' ) ? mbn_tag( $attributes['titleTag'] ?? '', 'h2' ) : 'h2';
+?>
+<<?php echo esc_html( $title_tag ); ?> class="m-0 font-primary text-mbn-h2 …">
+  <?php echo esc_html( $sec_title ); ?>
+</<?php echo esc_html( $title_tag ); ?>>
+```
+
+Repeatable content uses the shared `ItemsRepeater` (multiple repeaters per block via
+its `attribute` prop, e.g. `items` + `tags`). **Editor render (`edit.js`) and
+`render.php` must emit identical markup/classes** so the editor matches the published
+page.
+
+---
+
+## 3. Frameworks & Libraries
+
+- **UI:** WordPress Gutenberg blocks authored in **JSX**, built with
+  **`@wordpress/scripts`** (`^32`). Editor React comes from `@wordpress/*` packages
+  (auto-detected into each `*.asset.php`). **No standalone React/Vue app.**
+- **Styling:** **Tailwind CSS v3** only (admin/editor **and** front end). No CSS
+  Modules, no Styled Components, no Sass.
+- **Build:** `webpack.config.js` (wp-scripts) compiles `src/<name>/` →
+  `build/<name>/` (and `build/components/<name>/`), plus two non-block editor-plugin
+  entries: `template-reuse` (Remote Templates sidebar) and `content-io` (per-post
+  Import/Export sidebar). `block-registry.php` scans `build/` **recursively** and
+  registers every dir containing a `block.json`.
+- **Commands:** `npm run build` (= `build:js` + `build:css`); `npm run dev` (JS watch +
+  CSS watch); `npm run bundle` (distributable zip → `bundle/mbn-theme.zip`, dev/AI
+  harness excluded). **Run `npm run build` after changing block source.** `build/`,
+  `assets/build/` and `bundle/` are generated artifacts (gitignored); on a specific
+  project install the `src/mbn-ai-*` sources ARE committed (see `development.md`).
+- **Server:** PHP 8, WordPress theme. PHP indent 2 spaces (`phpcs.xml`);
+  `composer run lint` must pass before commit.
+
+---
+
+## 4. Asset Management
+
+- **Every design asset (images, backgrounds, videos, vectors, icons) lives in the WP
+  media library** — referenced from media, **never raw Figma URLs, never committed in
+  the theme.** Use `download_assets` → upload via WordPress MCP / WP-CLI (dedupe; never
+  re-upload existing media).
+- **Raster images:** render with `wp_get_attachment_image()` /
+  `get_the_post_thumbnail()` at a size from a **per-image size attribute** (responsive
+  `srcset`+`sizes`, lazy-load). Expose an **image-size dropdown** via the shared
+  `MediaPicker` `sizeValue`/`onSizeChange` props (default `full`). Storage convention:
+  single image → `imageSize`; extra/logo → `<name>Size`; repeater → `withSize:true`
+  stored in `<key>Size`.
+- **Section / full-bleed backgrounds are a responsive CSS `background-image`, not an
+  `<img>`** — use `mbn_responsive_bg( $element_id, $attachment_id, $lcp, $position )`
+  (`inc/block-layout-helpers.php`). It prints a scoped `<style>` swapping the image by
+  breakpoint (mobile → `medium_large`, ≥768px → `large`, ≥1280px → `full`,
+  `background-size:cover`). Wrapper gets a unique id (`wp_unique_id('mbn-…-')`) +
+  `bg-cover bg-center`.
+- **LCP:** one section-background block per page carries an "LCP (above the fold)"
+  toggle (`LcpControl` → `lcp` attr); pass `$lcp = true` to preload it. Content `<img>`
+  LCP → `mbn_lcp_img_attrs()`.
+- **Optimization:** new JPEG/PNG uploads auto-generate **WebP** sub-sizes
+  (`optimizations.php`); `wp_get_attachment_image()` serves WebP automatically. No CDN
+  config in-theme.
+- **Background video:** `<video autoplay muted loop playsinline>` + **mandatory preload
+  `<img>` poster** (shown until ready / on reduced-motion). Front-end lazy loader
+  `assets/js/mbn-video.js` (`data-src` → `src`, IntersectionObserver).
+
+---
+
+## 5. Icon System
+
+- **Icons & vectors are SVG, stored in the WP media library** (not an icon font, not a
+  sprite, not a committed `icons/` dir).
+- **SVGs are inlined as `<svg>`** (never a background, never `<img>`) via
+  `mbn_inline_svg_attachment( $attachment_id, $size, $classes )`
+  (`inc/block-layout-helpers.php`) — `$size = 0` omits width/height so CSS controls it:
+
+  ```php
+  echo mbn_inline_svg_attachment( $accent_id, 0, 'block h-[12px] w-full' ); // phpcs:ignore ...
+  ```
+
+- Strip baked icon background paths on export (see the figma skill). The `mbn-ai-icon`
+  component wraps icon usage; a per-icon size attribute controls dimensions.
+- No naming convention beyond the media slug; look up by slug with
+  `mbn_attachment_id_by_slug()` when needed.
+
+---
+
+## 6. Styling Approach
+
+- **Tailwind utilities only** — for admin/editor **and** front end. Global entry
+  `resources/css/app.css` → built to `assets/build/tailwind.css`
+  (`npm run build:css`). Component-layer globals live in `@layer components` there
+  (e.g. `.wp-block-button__link`, scroll-reveal `[data-mbn-reveal]`, sticky-header
+  `.mbn-site-header`).
+- **NO attribute styling. Never use `style="…"`.** Use Tailwind utilities, design-system
+  classes, and `--mbn-*` vars. If custom CSS is unavoidable, put it in a scoped
+  `<style>` inside the block's `render.php` (scoped by an `mbn-` class/id). *(Editor
+  inspector controls in `edit.js` may use inline `style` for admin-only spacing — that's
+  React admin UI, not front-end output.)*
+- **Design-system utilities** (safelisted in `tailwind.config.js`): `bg-scheme-N` /
+  `text-scheme-N` / `border-scheme-N` (1–8), `bg/text/border-mbn-primary|secondary`,
+  `font-primary` / `font-secondary`, `text-mbn-h1..h6` / `text-mbn-body`, `rounded-mbn`,
+  `max-w-mbn-container`. Map Figma color/type styles to these, not to raw hex/px.
+- **Custom classes:** `mbn-` prefix, kebab-case, no `__`/`_`. Add one only when
+  utilities can't express it.
+- **Responsive:** mobile-first Tailwind breakpoints. Verify desktop **1920×1080** and
+  mobile **Moto G Power 360×640**. Match the design's **font weights**, borders,
+  vectors, column ratios, hovers, sticky header, scroll behavior.
+- **Runtime-built arbitrary values:** Tailwind only compiles `bg-[#e50b07]`,
+  `h-[3px]`, `opacity-[0.4]` when it sees the **exact literal** in a scanned file, and
+  safelist *regex patterns can't match arbitrary values*. When a `render.php`
+  concatenates a class from a **dynamic** value (hex/px/opacity), the palette + bounded
+  ranges are enumerated as explicit strings by `mbnArbitrarySafelist` in
+  `tailwind.config.js`. **Add a new hex to `MBN_ARBITRARY_PALETTE`** (or widen a range)
+  so it compiles — never rely on a pattern. Literal arbitrary classes (e.g.
+  `shadow-[0px_3px_0px_#d3110e]`) need no safelist (they appear verbatim).
+- **One shared container:** header, footer, and `post_content` use the same container
+  (`.container` / `max-w-mbn-container` + `px-4 sm:px-6 lg:px-8`) so edges align.
+
+---
+
+## 7. Project Structure
+
+```
+mbn-theme/
+├── src/                      # block source (JSX)
+│   ├── <section>/            #   composite/section blocks: mbn-ai-hero, mbn-ai-faq …
+│   │   ├── block.json  index.js  edit.js  render.php
+│   ├── components/<name>/    #   reusable mbn-ai- component blocks (mbn-ai-button …)
+│   ├── shared/               #   MediaPicker, controls, items-repeater, tag-control,
+│   │                         #   lcp-control, animation-control, server-preview, layout…
+│   ├── mbn-section|container|columns|column/   # layout primitives
+│   ├── mbn-logo | mbn-menu   #   dynamic server-rendered blocks
+│   └── template-reuse | content-io/  # editor-plugin sidebars (not blocks)
+├── build/                    # generated (gitignored) — block-registry.php scans this
+├── inc/                      # theme PHP: theme-settings (tokens), block-layout-helpers,
+│                             #   block-templates, template-reuse, media-uploads, content-io
+├── resources/css/app.css     # Tailwind entry  →  assets/build/tailwind.css
+├── tailwind.config.js        # theme(--mbn vars) + safelist + arbitrary-value enum
+├── optimizations.php         # auto-WebP sub-sizes
+├── block-registry.php        # recursively registers every build/**/block.json
+├── header.php / footer.php    # fall back to header/footer BLOCK TEMPLATES (do_blocks)
+└── .claude/                  # SINGLE SOURCE OF TRUTH for AI rules/skills/commands
+```
+
+- **Header/footer** render from `header`/`footer` **block templates** via
+  `mbn_render_part_template()` (do_blocks), falling back to `header.php`/`footer.php`.
+  Block templates are the `mbn_block_template` CPT (`inc/includes-block-templates.php`).
+- **Feature organization:** one directory per block; shared logic in `src/shared/`
+  (JS) and `inc/` (PHP helpers). AI-authored work is namespaced `mbn-ai-`.
+- **Content moves as JSON, not chat pastes:** `inc/includes-content-io.php` exports/
+  imports a post + its media (upsert keyed by `post_id`, media matched by filename).
+  In the editor it's the **Import / Export sidebar** (icon beside Remote Templates;
+  import always targets the CURRENT post); also `wp mbn-content export|import` and
+  `GET|POST /wp-json/mbn/v1/posts` — see `development.md`.
+
+---
+
+## Conventions & guardrails (must-follow)
+
+- Functions/vars `snake_case`; classes `PascalCase`; constants `UPPER_SNAKE_CASE`.
+- **Sanitize all input, escape all output** (`esc_html`/`esc_attr`/`esc_url`/
+  `wp_kses_post`); intentionally-raw block output carries a scoped
+  `phpcs:ignore WordPress.Security.EscapeOutput…` with a reason. Never hardcode secrets.
+- **Every media field uses the shared `MediaPicker`** (thumbnail for images, inline
+  `<video>` for video) — never a bare `MediaUpload`. Every raster image has a size
+  attribute + size dropdown (default `full`).
+- **Use ALL shared controls from `src/shared/`** — `MediaPicker`, `ItemsRepeater`
+  (multiple repeaters via `attribute`), `TagControl` for **every heading tag**
+  (`*Tag` attr + `mbn_tag()` in render), `SizeControl`, `LcpControl`,
+  `AnimationControl`, `ServerPreview`. Never re-implement one inline.
+- **Maps:** the Google Maps API key lives in Appearance → MBN Theme → Integrations
+  (`mbn_setting( 'maps_api_key' )`); map blocks offer `mapMode` google|image (Maps
+  Embed API iframe with a static-image fallback) — never hardcode a key.
+- **Inspector controls are spaced:** standard WP controls keep their default bottom
+  margin (don't pass `__nextHasNoMarginBottom`); custom controls wrap in
+  `<div className="mbn-control" style={{ marginBottom: 24 }}>`.
+- **No hardcoded menus / link lists** — nav comes from Appearance → Menus.
+- **`.claude/` is the source of truth.** Edit `.claude/**` only, then run
+  `scripts/sync-ai-config.sh` to regenerate `.cursor/**` + `AGENTS.md` (a pre-commit
+  hook enforces sync). **Never hand-edit `.cursor/**` or `AGENTS.md`.**
+- **Run `npm run build`** after changing block source so editor + front end match.
+- **Test before commit** (`composer run lint`); no direct `git push` — open a PR.
+- **Figma → blocks workflow** is driven by the `figma` skill / `/build-design
+  <post_id> <figma_link>` and `/build-components <figma_link>` commands. Browser QA runs
+  **only** on request via `/testing <url>`.

@@ -82,6 +82,7 @@ function mbn_settings_defaults(): array {
 	  'color_schemes'   => mbn_default_color_schemes(),
 	  'container_width' => '1280px',
 	  'border_radius'   => '0.5rem',
+	  'maps_api_key'    => '',
   );
 
   // Desktop sizes default to the scale; tablet/mobile default to '' (auto-reduced).
@@ -876,6 +877,7 @@ function mbn_sanitize_settings( $input ): array {
     array(
 		'container_width' => mbn_sanitize_css_length( $input['container_width'] ?? '' ),
 		'border_radius'   => mbn_sanitize_css_length( $input['border_radius'] ?? '' ),
+		'maps_api_key'    => sanitize_text_field( $input['maps_api_key'] ?? '' ),
     ),
     mbn_sanitize_fallback_settings( $input )
   );

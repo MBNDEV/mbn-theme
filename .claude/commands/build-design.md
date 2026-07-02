@@ -27,10 +27,24 @@ chrome-devtools-verified** workflow.
   inline `style` attribute. This is why sections are authored as `mbn-ai-` blocks
   (their `render.php` is scanned by Tailwind), not as core blocks with inline styles.
 - **Every asset lives in the WP media library.** Images, background images,
-  background **videos**, vectors and **icons** are all pulled from Figma and exported
-  to WP media, then referenced from there (`wp_get_attachment_image()` /
-  attachment URLs) — never raw Figma URLs, never files committed in the theme.
-  De-duplicate before uploading.
+  background **videos**, vectors and **icons** are all pulled from Figma (via the
+  **Figma MCP**) and exported to WP media, then referenced from there
+  (`wp_get_attachment_image()` / attachment URLs) — never raw Figma URLs, never files
+  committed in the theme. De-duplicate before uploading.
+- **Implement the layout VISUALLY — not by Figma's width.** Reproduce the look,
+  proportions, hierarchy and spacing, but build with the fluid shared container
+  (`max-w-mbn-container` + responsive padding) — never copy Figma's fixed frame width
+  onto a block. "As long as it is similar" is the bar for dimensions; it must be
+  responsive/mobile-first.
+- **Functional blocks.** Sliders, accordions, tabs, carousels, collapse → build the real
+  interactive behavior; **libraries allowed** (jQuery loaded; Slick etc.), vendored
+  locally under `assets/libs/`.
+- **Half / partial backgrounds & gradients.** Reproduce split/half backgrounds and
+  partial gradients exactly in CSS — never flatten to a solid fill.
+- **Vectors 100% accurate.** Every vector/icon is exported from its Figma node to WP
+  media and inlined so it matches the source exactly — never redraw, approximate, or
+  strip a vector. Export grouped assets as one asset.
+- **All text dynamic** — no hardcoded copy, links or media anywhere.
 - **Observe EVERY node's stroke, fills, vectors and effects.** For each Figma node,
   read (`get_design_context` / `get_variable_defs`) and reproduce exactly: **fills**
   (solid/gradient colors → scheme utilities + `--mbn-*`; image fills → export to media
@@ -49,6 +63,14 @@ chrome-devtools-verified** workflow.
   `ServerPreview`/`ServerSideRender` canvas so edits render immediately. **Never** bake
   a block's text or media so it can only be changed in the markup — the editor must be
   able to edit every piece of content like a page builder.
+- **IMPORTANT: use `src/shared/` for reusable controls and options.** Every reusable
+  editor control or option comes from `src/shared/` — `MediaPicker`
+  (`media-controls.js`), `ItemsRepeater` (`items-repeater.js`), `controls.js`,
+  `lcp-control.js`, `animation-control.js`, `tag-control.js`, `server-preview.js`,
+  `layout.js`, `save.js`. Import them (`../shared/…`; from `src/components/<name>/`:
+  `../../shared/…`) — **never re-implement a picker/repeater/control inline in a
+  block's `edit.js`**. If a control is missing or lacks an option, add/extend it in
+  `src/shared/` (backward-compatibly) so every block gets it.
 - **End-to-end test the WHOLE post with the chrome-devtools MCP — not per section.**
   Build every section first, then run one comprehensive pass over the finished post:
   screenshot it top to bottom and compare to the Figma design at **desktop (1920×1080),
@@ -72,9 +94,10 @@ chrome-devtools-verified** workflow.
   interactions (hover/focus/scroll), sticky-on-scroll behavior, and modules
   (sliders, patterns).
 
-> **Starting a new project?** Run `/reset` first (confirmation required) to remove the
-> previous project's `mbn-ai-` blocks/components (and optionally its
-> content/media/menus/preset) so you build from a clean baseline.
+> **Starting a new project?** Run `scripts/reset.sh` first (it prompts for confirmation)
+> to remove the previous project's `mbn-ai-` blocks/components (and optionally its
+> content/media/menus/preset via `--content`/`--media`/`--menus`/`--preset`) so you build
+> from a clean baseline. `scripts/reset.sh --dry-run` previews; `--yes` skips the prompt.
 
 ## Scope (flags)
 

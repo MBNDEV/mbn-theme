@@ -12,6 +12,7 @@ the two assistants always have the same skills, rules, commands and workflow.
 
 ## Rules (always apply)
 
+- `.claude/rules/figma-design-system.md`
 - `.claude/rules/git-workflow.md`
 - `.claude/rules/security.md`
 - `.claude/rules/web-design.md`
@@ -24,11 +25,11 @@ the two assistants always have the same skills, rules, commands and workflow.
 - `/bundler`
 - `/create-release`
 - `/pull-request`
-- `/reset`
 - `/testing`
 
 ## Skills
 
+- `ai-blocks` (`.claude/skills/ai-blocks/SKILL.md`)
 - `components` (`.claude/skills/components/SKILL.md`)
 - `developer` (`.claude/skills/developer/SKILL.md`)
 - `figma` (`.claude/skills/figma/SKILL.md`)

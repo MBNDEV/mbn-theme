@@ -10,25 +10,50 @@
 
 @layer components {
   /*
-   * DA-Motorsports body buttons: angular (no radius) with a red bottom accent
-   * and the Oxanium display face — matches the design's CTA style across the
-   * hero, CTAs and location blocks. Applies to core button blocks used in
-   * post content (the header/footer blocks style their own <a>s).
+   * Aqua Valley body buttons: rounded (radius/lg), Manrope semibold on the
+   * primary blue. Applies to core button blocks used in post content (the
+   * mbn-ai-button component styles its own <a>).
    */
   .wp-block-button__link {
-    border-radius: 0;
-    font-family: var(--mbn-font-primary);
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.01em;
-    box-shadow: 0 3px 0 0 #d3110e;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    border-radius: var(--mbn-radius);
+    font-family: var(--mbn-font-secondary);
+    font-weight: 600;
+    background-color: var(--mbn-color-scheme-1);
+    transition: background-color 0.2s ease;
   }
 
   .wp-block-button__link:hover,
   .wp-block-button__link:focus {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 0 0 #d3110e;
+    background-color: color-mix(in srgb, var(--mbn-color-scheme-1), #000 15%);
+  }
+
+  /*
+   * mbn-ai-button hover states — variants share the base .mbn-ai-btn class in
+   * the block render; hovers need color-mix so they track the preset schemes.
+   */
+  .mbn-ai-btn--primary:hover,
+  .mbn-ai-btn--primary:focus-visible {
+    background-color: color-mix(in srgb, var(--mbn-color-scheme-1), #000 15%);
+  }
+  .mbn-ai-btn--tertiary:hover,
+  .mbn-ai-btn--tertiary:focus-visible {
+    background-color: color-mix(in srgb, var(--mbn-color-scheme-1), transparent 92%);
+  }
+  .mbn-ai-btn--dark:hover,
+  .mbn-ai-btn--dark:focus-visible {
+    background-color: color-mix(in srgb, var(--mbn-color-scheme-2), #fff 12%);
+  }
+  .mbn-ai-btn--light:hover,
+  .mbn-ai-btn--light:focus-visible {
+    background-color: rgba(255, 255, 255, 0.12);
+  }
+  .mbn-ai-btn--deep:hover,
+  .mbn-ai-btn--deep:focus-visible {
+    background-color: color-mix(in srgb, #084c74, #fff 12%);
+  }
+  .mbn-ai-btn--cyan:hover,
+  .mbn-ai-btn--cyan:focus-visible {
+    background-color: color-mix(in srgb, var(--mbn-color-scheme-3), #000 12%);
   }
 }
 

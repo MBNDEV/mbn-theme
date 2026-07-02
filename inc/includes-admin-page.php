@@ -395,6 +395,17 @@ function mbn_render_theme_admin_page(): void {
         </tr>
       </table>
 
+      <h2 class="title"><?php esc_html_e( 'Integrations', 'mbn-theme' ); ?></h2>
+      <table class="form-table" role="presentation">
+        <tr>
+          <th scope="row"><label for="mbn-maps-api-key"><?php esc_html_e( 'Google Maps API key', 'mbn-theme' ); ?></label></th>
+          <td>
+            <input type="text" id="mbn-maps-api-key" class="regular-text" name="mbn_settings[maps_api_key]" value="<?php echo esc_attr( (string) mbn_setting( 'maps_api_key' ) ); ?>" autocomplete="off" />
+            <p class="description"><?php esc_html_e( 'Used by map blocks (Maps Embed API). Restrict the key to this site’s HTTP referrer in the Google Cloud console. Leave empty to keep maps rendering as static images.', 'mbn-theme' ); ?></p>
+          </td>
+        </tr>
+      </table>
+
       <h2 class="title"><?php esc_html_e( 'Custom HTML (Global)', 'mbn-theme' ); ?></h2>
       <table class="form-table" role="presentation">
         <?php foreach ( mbn_custom_html_slots() as $slot ) : ?>

@@ -12,7 +12,8 @@ the foundation `/build-components` produces and `/build-design` composes.
 
 ## Principles
 
-- **Reuse first, never reimplement.** Before building, check the **registry** below and
+- **Reuse first, never reimplement.** Before building, check the **`ai-blocks`
+  registry** (`.claude/skills/ai-blocks/SKILL.md`) and
   `src/components/mbn-ai-*`. If a component exists, use it; if it needs a new variant,
   **extend that `mbn-ai-` block** (add an attribute/variant) — modifying `mbn-ai-`
   blocks is allowed; never edit `mbn-` blocks. Sections **compose** components via
@@ -41,6 +42,20 @@ the foundation `/build-components` produces and `/build-design` composes.
   as editor controls — `InspectorControls` (Text/Textarea/RichText/MediaUpload) + the
   shared `ItemsRepeater` for arrays — with a live `ServerPreview`. No content that can
   only be edited in the block markup.
+- **ALL shared controls — ENSURED.** Every editor control comes from `src/shared/` —
+  never re-implemented inline in a block's `edit.js`: `MediaPicker` for every media
+  field (with `sizeValue`/`onSizeChange` for rasters), `ItemsRepeater` for every
+  repeatable list (multiple repeaters per block via its `attribute` prop),
+  `TagControl`/`SizeControl` (`tag-control.js`) for semantic tags and text-size
+  utilities, `LcpControl` for above-the-fold backgrounds, `AnimationControl` for
+  reveals, and `ServerPreview` for the live canvas. A missing option is added to the
+  shared control (backward-compatibly), never forked into one block.
+- **Heading tags via TagControl — ENSURED.** Every heading a block renders is
+  tag-selectable: a `*Tag` attribute (`titleTag`, `itemTitleTag`, `headingTag`…) +
+  the shared `TagControl` in `edit.js`, rendered through
+  `mbn_tag( $attributes['titleTag'] ?? '', 'h2' )` (in `inc/block-layout-helpers.php`)
+  so only allowed elements (h1–h6/p/div/span) are emitted. Defaults keep the semantic
+  outline — exactly one `h1` per page (hero), `h2` sections, `h3` card titles.
 - **Verify** each component against its Figma component with the chrome-devtools MCP.
 
 ## Scanning Figma for components
@@ -48,7 +63,7 @@ the foundation `/build-components` produces and `/build-design` composes.
 - Enumerate `instance` nodes (each points at a main component); group by main
   component so each is built once. `get_design_context` + `get_screenshot` per unique
   component for ground truth (variants, font weights, colors, strokes/gradients).
-- Classify into a canonical `mbn-ai-` type (see registry). Add new canonical names for
+- Classify into a canonical `mbn-ai-` type (see the `ai-blocks` registry). Add new canonical names for
   genuinely new kinds.
 
 ## Canonical component vocabulary
@@ -75,13 +90,13 @@ for the attributes + `ServerPreview`) + `render.php` (Tailwind + `--mbn-*`; scop
 as an `<img>` behaving like cover/center (with a preload `<img>` poster for video
 backgrounds).
 
-## Registry (keep updated as components are built)
+## Registry → the `ai-blocks` skill
 
-_none yet_ — no `mbn-ai-` components have been built for the current project. Add a row
-for each component as it is created.
-
-| Component block | Purpose | Key attributes | Status |
-|---|---|---|---|
+The live list of which `mbn-ai-` blocks/components exist lives in the **`ai-blocks`**
+skill (`.claude/skills/ai-blocks/SKILL.md`) — the one mutable AI-state file. **Read it
+before building** to reuse/extend an existing component; **update only its table** when
+you create or extend one. This `components` skill (and all skill/command definitions)
+stays **locked (read-only) while a command runs** — never edit it mid-build.
 
 ### Icons & SVGs — ENSURED + NECESSARY
 
@@ -113,4 +128,5 @@ for each component as it is created.
   width and `h-auto` can collapse or mis-size the SVG.
 
 > When `/build-components` (or any build) creates or extends a component, add/update
-> its row here so future runs reuse it instead of rebuilding.
+> its row in the **`ai-blocks` registry** (`.claude/skills/ai-blocks/SKILL.md`) so future
+> runs reuse it instead of rebuilding — that registry is the only file a build run writes.
