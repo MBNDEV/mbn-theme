@@ -136,9 +136,10 @@ On anonymous front-end requests the page is buffered and rewritten to load late:
 customizer, AJAX/REST/feeds and **for logged-in users** (so the toolbar/editor are
 untouched) — verify it logged out. Toggle with the `mbn_enable_optimizations` filter.
 
-## Build, bundle & lint
+## Build, develop, bundle & lint
 
 ```bash
+npm run dev           # Development process command watch
 npm run build         # JS blocks (wp-scripts) + Tailwind CSS
 npm run bundle        # distributable theme zip → bundle/mbn-theme.zip
 composer run lint     # PHPCS — must pass before committing
