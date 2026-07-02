@@ -52,9 +52,9 @@ function ItemField( { field, value, onChange, sizeValue, onSizeChange } ) {
 	);
 }
 
-export function ItemsRepeater( { attributes, setAttributes, fields } ) {
-	const items = attributes.items || [];
-	const setItems = ( next ) => setAttributes( { items: next } );
+export function ItemsRepeater( { attributes, setAttributes, fields, attribute = 'items' } ) {
+	const items = attributes[ attribute ] || [];
+	const setItems = ( next ) => setAttributes( { [ attribute ]: next } );
 
 	const updateField = ( idx, key, value ) =>
 		setItems(

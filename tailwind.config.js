@@ -10,8 +10,9 @@
  * resolves. Add a hex to MBN_ARBITRARY_PALETTE and it works everywhere automatically.
  */
 const MBN_ARBITRARY_PALETTE = [
-  '#e50b07', '#d3110e', '#5b0402', '#191919', '#000000', '#ffffff',
-  '#4c4c4c', '#b2b2b2', '#d8d8d8', '#f2f2f2', '#0a0a0a',
+  '#006dab', '#084c74', '#082f49', '#00a9c8', '#f8fcff', '#eaf8fc',
+  '#d8ebf2', '#9bc7d7', '#536476', '#748494', '#111827', '#f4c542',
+  '#0057a4', '#4cd0fc', '#fca14c', '#000000', '#ffffff',
 ];
 const MBN_COLOR_UTILS = [ 'bg', 'text', 'border', 'from', 'via', 'to', 'fill', 'stroke', 'ring', 'decoration', 'outline' ];
 

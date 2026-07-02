@@ -6,7 +6,7 @@
  */
 
 ?>
-	<footer class="mbn-site-footer w-full border-t border-black">
+	<footer class="mbn-site-footer mt-auto w-full">
 		<?php
 		$mbn_footer = function_exists( 'mbn_render_part_template' ) ? mbn_render_part_template( 'footer' ) : '';
 		if ( '' !== $mbn_footer ) {

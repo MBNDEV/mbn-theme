@@ -11,7 +11,16 @@
  * aborted if any REQUIRED_KEEP runtime file is missing from the staged copy.
  */
 import { execSync } from 'node:child_process';
-import { existsSync, readFileSync, mkdirSync, rmSync, cpSync, readdirSync } from 'node:fs';
+import {
+	existsSync,
+	readFileSync,
+	mkdirSync,
+	rmSync,
+	cpSync,
+	readdirSync,
+	lstatSync,
+	copyFileSync,
+} from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -35,7 +44,9 @@ const EXCLUDE_NAMES = new Set( [
 	'.git',
 	'.gitignore',
 	'.vscode',
+	'.vexp',
 	'.DS_Store',
+	'development.md',
 	// dependencies & generated output
 	'node_modules',
 	'vendor',
@@ -95,15 +106,34 @@ console.log( 'Staging theme files…' );
 rmSync( outDir, { recursive: true, force: true } );
 mkdirSync( stageDir, { recursive: true } );
 
-for ( const entry of readdirSync( root ) ) {
-	if ( isExcluded( entry ) ) {
-		continue;
+/**
+ * Manual recursive copy: only regular files and directories are copied.
+ * Sockets, FIFOs and symlinks are skipped — fs.cpSync( { filter } ) throws an
+ * internal assertion on such entries (e.g. a daemon .sock file) on Node 22+.
+ *
+ * @param {string} src Absolute source path.
+ * @param {string} dest Absolute destination path.
+ */
+function stageCopy( src, dest ) {
+	const rel = path.relative( root, src ).replace( /\\/g, '/' );
+	if ( rel && isExcluded( rel ) ) {
+		return;
 	}
-	cpSync( path.join( root, entry ), path.join( stageDir, entry ), {
-		recursive: true,
-		filter: ( source ) =>
-			! isExcluded( path.relative( root, source ).replace( /\\/g, '/' ) ),
-	} );
+	const stat = lstatSync( src );
+	if ( stat.isDirectory() ) {
+		mkdirSync( dest, { recursive: true } );
+		for ( const entry of readdirSync( src ) ) {
+			stageCopy( path.join( src, entry ), path.join( dest, entry ) );
+		}
+	} else if ( stat.isFile() ) {
+		mkdirSync( path.dirname( dest ), { recursive: true } );
+		copyFileSync( src, dest );
+	}
+	// Anything else (socket, FIFO, symlink) never ships.
+}
+
+for ( const entry of readdirSync( root ) ) {
+	stageCopy( path.join( root, entry ), path.join( stageDir, entry ) );
 }
 
 // Ship a production-only vendor/ ONLY when the theme has real runtime Composer

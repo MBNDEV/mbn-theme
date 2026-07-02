@@ -88,13 +88,18 @@ both the WordPress admin/editor and the front end.
   header/footer into their block templates, assets into the WP media library.
 - `commands/build-components.md` — `/build-components <figma_link>`: scan Figma for
   reusable components → generic `mbn-ai-` component blocks (dedupe; never reimplement).
-- `commands/reset.md` — `/reset`: reset for a new project — remove ALL `mbn-ai-`
-  blocks/components (+ optional content/media/menus/preset); REQUIRES explicit
-  confirmation; never touches `mbn-` blocks.
+- `scripts/reset.sh` — reset for a new project — remove ALL `mbn-ai-`
+  blocks/components (+ optional `--content`/`--media`/`--menus`/`--preset`); a plain
+  shell script (not an LLM command) that prompts for confirmation before deleting
+  (`--yes` to skip, `--dry-run` to preview); never touches core `mbn-` blocks.
 - `development.md` — required plugins (Gravity Forms, GF SMTP) + Claude MCP/plugins,
   the post import/export upsert endpoint, and token-reduction guidance.
 - `skills/figma` — Figma → blocks + WordPress MCP media upload.
-- `skills/components` — reusable `mbn-ai-` component blocks + registry.
+- `skills/components` — reusable `mbn-ai-` component blocks (how to build them).
+- `skills/ai-blocks` — **live registry** of the `mbn-ai-` blocks/components built for the
+  current project — the one mutable AI-state file. Skill/command definitions stay
+  **locked (read-only) while a command runs**; the only file a build/reset run writes is
+  this registry. `scripts/reset.sh` clears it.
 - `skills/developer` — senior WordPress/Gutenberg engineering practices.
 - `skills/frontend` — web design practices.
 - `skills/quality-assurance` — QA checklist (run only via `/testing <url>`).

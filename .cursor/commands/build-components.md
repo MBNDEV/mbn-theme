@@ -14,14 +14,16 @@ sections (and `/build-design`) can compose them instead of re-implementing the s
 button/pattern/line over and over. Build on the `components`, `figma` and `frontend`
 skills and `rules/web-design.md`.
 
-> **Starting a new project?** Run `/cleanup` first to remove the previous project's
-> `mbn-ai-` blocks/components so components are rebuilt from a clean baseline.
+> **Starting a new project?** Run `scripts/reset.sh` first (prompts for confirmation) to
+> remove the previous project's `mbn-ai-` blocks/components so components are rebuilt from
+> a clean baseline.
 
 ## Non-negotiables
 
 - **Dedupe — never reimplement.** Before creating anything, check whether a matching
   component block already exists (`src/components/mbn-ai-*`, and any registered
-  component in the `components` skill registry). If it exists, **reuse it** (extend it
+  component in the **`ai-blocks` registry**, `.claude/skills/ai-blocks/SKILL.md`). If it
+  exists, **reuse it** (extend it
   only if the design needs a new variant/attribute — modifying `mbn-ai-` blocks is
   allowed; never edit `mbn-` blocks). Report what was reused vs created.
 - **Generic + attribute-driven.** Components must be design-agnostic: colors, sizes,
@@ -71,8 +73,9 @@ For each component with no existing block:
 
 ## Step 3 — Register + verify
 
-- Record the component in the **`components` skill registry** (name → purpose →
-  attributes → Figma component) so future runs reuse it.
+- Record the component in the **`ai-blocks` registry** (`.claude/skills/ai-blocks/SKILL.md`:
+  name → type → purpose → attributes → status) so future runs reuse it. That registry is
+  the **only** file this command writes — skill/command definitions stay locked (read-only).
 - `npm run build`; open a scratch post/preview and verify each new component against
   its Figma component with the chrome-devtools MCP (desktop + Moto G Power); confirm
   assets load (no 4xx) and there are no console errors.

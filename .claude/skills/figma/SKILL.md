@@ -21,6 +21,25 @@ in the WordPress media library** and the output stored as a post's `post_content
 - **Every asset lives in WP media** — images, background images, background videos,
   vectors and icons — referenced from media (`wp_get_attachment_image()` / attachment
   URLs), never raw Figma URLs, never committed in the theme.
+- **Implement the layout VISUALLY — not by Figma's width.** Reproduce the look,
+  proportions, hierarchy and spacing rhythm, but build with the **fluid shared
+  container** (`max-w-mbn-container` + responsive padding) — never transcribe Figma's
+  fixed frame width (e.g. 1440) onto the block. "As long as it is similar" is the bar
+  for dimensions; the result must be responsive/mobile-first, not a fixed-width clone.
+- **Functional blocks.** If a section is a slider, accordion, tabs, carousel, collapse
+  or modal, build the real interactive behavior — **libraries are allowed** (jQuery is
+  loaded; e.g. Slick for sliders). Vendor any library's assets locally under
+  `assets/libs/` and enqueue them.
+- **Half / partial backgrounds & gradients.** Check each section **visually**: a split or
+  half background, a band, or a gradient covering only part of the section (top-half
+  fill, diagonal/linear overlay, fade) is reproduced **exactly** in CSS (layered or
+  positioned background, `bg-gradient-*`, scoped `<style>`) — never flattened to a solid.
+- **Vectors 100% accurate.** Every vector/icon is exported from its Figma node to WP
+  media and inlined via `mbn_inline_svg_attachment()` so the rendered SVG matches the
+  source **exactly** (paths, fills, proportions) — never redraw, approximate, or strip a
+  vector. If the asset is a Figma **group**, export the whole group as one asset.
+- **All text dynamic.** No hardcoded copy, labels, links or media anywhere — every piece
+  is an editor attribute (RichText/Text/MediaPicker/`ItemsRepeater`/Menus).
 - **Check EVERY node's fill — no exceptions (ENSURED).** Walk every node in the frame —
   `rectangle`, `frame`, `content`, `text`, `group`, `instance`, any module — and inspect
   its **Fill** (and stroke/effect). A fill is never "just a colour": it may be an **image
@@ -50,6 +69,12 @@ in the WordPress media library** and the output stored as a post's `post_content
   as editor controls — `InspectorControls` (Text/Textarea/RichText/MediaUpload) + the
   shared `ItemsRepeater` for arrays — with a live `ServerPreview` canvas. Never leave
   content editable only in the block markup.
+- **IMPORTANT: reusable controls and options come from `src/shared/`.** Use the shared
+  modules — `MediaPicker` (`media-controls.js`), `ItemsRepeater` (`items-repeater.js`),
+  `controls.js`, `lcp-control.js`, `animation-control.js`, `tag-control.js`,
+  `server-preview.js`, `layout.js`, `save.js` — imported via `../shared/…` (components:
+  `../../shared/…`). Never re-implement one inline in a block; if a control/option is
+  missing, add or extend it in `src/shared/` (backward-compatibly) so all blocks share it.
 - **Verify each section** against the Figma URL with the chrome-devtools MCP before
   moving to the next.
 - **One shared container** — header, footer and post_content use the same content

@@ -222,6 +222,11 @@ function mbn_optimize_external_scripts( string $html ): string {
       if ( preg_match( '#\b(?:defer|async)\b#i', $matches[1] ) ) {
         return $matches[0];
       }
+      // wp-i18n / wp-hooks must stay synchronous: WordPress prints inline
+      // `wp.i18n.*` after-scripts that run immediately (e.g. Gravity Forms).
+      if ( preg_match( '#wp-includes/js/dist/(?:i18n|hooks)\.min\.js#i', $matches[1] ) ) {
+        return $matches[0];
+      }
       return '<script' . $matches[1] . ' defer>';
     },
     $html

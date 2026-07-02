@@ -16,7 +16,7 @@
 <body <?php body_class(); ?>>
 <?php wp_body_open(); ?>
 <div id="page" class="mbn-site flex min-h-screen flex-col">
-	<header id="masthead" class="mbn-site-header w-full border-b border-black">
+	<header id="masthead" class="mbn-site-header w-full">
 		<?php
 		$mbn_header = function_exists( 'mbn_render_part_template' ) ? mbn_render_part_template( 'header' ) : '';
 		if ( '' !== $mbn_header ) {

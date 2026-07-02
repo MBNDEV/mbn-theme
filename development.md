@@ -15,13 +15,41 @@ settings (e.g. the footer's *Newsletter Gravity Form ID*).
 
 ## Required Claude tooling (plugins / MCP)
 
-| Tool | Use |
-|---|---|
-| **frontend-design-skills** (plugin) | Distinctive, intentional visual design when building or reshaping UI. |
-| **chrome-devtools MCP** | The ONLY browser QA path — section/page verification across desktop/tablet/mobile, console + network checks, screenshots. Run on request via `/testing <url>`. |
-| **Figma MCP** | Read designs (metadata / design context / screenshots / variables) and export assets to upload into WP media. |
-| **WordPress MCP** (or WP-CLI) | Read/write posts, media and options. If the host PHP can't reach the DB, run `wp` through the site's PHP container. |
-| **vexp MCP** | Graph-ranked code context (`run_pipeline`) instead of grep/glob. |
+| Tool | Install | Use |
+|---|---|---|
+| **Figma MCP** | [Remote server installation](https://developers.figma.com/docs/figma-mcp-server/remote-server-installation/) | Read designs (metadata / design context / screenshots / variables) and export assets to upload into WP media. |
+| **chrome-devtools MCP** | [ChromeDevTools/chrome-devtools-mcp](https://github.com/ChromeDevTools/chrome-devtools-mcp) | The ONLY browser QA path — section/page verification across desktop/tablet/mobile, console + network checks, screenshots. Run on request via `/testing <url>`. |
+| **frontend-design** (plugin) | `/plugin install frontend-design@claude-plugins-official` | Distinctive, intentional visual design when building or reshaping UI. |
+| **Claude in Chrome** (extension) | [Chrome Web Store](https://chromewebstore.google.com/detail/claude/fcoeoabgfenejglbffodgkkbkcdhcgfn) | Lets Claude drive your own Chrome session (tabs, forms, screenshots) when needed. |
+| **WordPress MCP** (or WP-CLI) | — | Read/write posts, media and options. If the host PHP can't reach the DB, run `wp` through the site's PHP container. |
+| **vexp MCP** | — | Graph-ranked code context (`run_pipeline`) instead of grep/glob. |
+
+## Project workflow (start → ship)
+
+1. **Install the WordPress plugins** — Gravity Forms + Gravity SMTP (table above).
+2. **Install the Claude MCPs / plugins** — Figma MCP, chrome-devtools MCP, the
+   `frontend-design` plugin and the Claude in Chrome extension (install links above).
+3. **Authenticate Figma** — run `/mcp` in Claude Code and complete the Figma sign-in
+   before any design work; `/build-design` stops if Figma isn't authenticated.
+4. **Build with the Claude commands:**
+
+   ```
+   /build-design <post_id> <figma_link>              # full build: header + footer, then the body
+   /build-design <post_id> <figma_link> --header     # reimplement only the header template
+   /build-design <post_id> <figma_link> --footer     # reimplement only the footer template
+   /build-design <post_id> <figma_link> --mobile     # responsiveness pass from the mobile frames
+   /testing <url>                                    # AI browser QA of that URL (chrome-devtools)
+   ```
+
+   `--header` / `--footer` can be combined; QA never runs automatically — only via
+   `/testing`.
+5. **Prompt with plans.** Keep a `plans/` folder in the repository root and write each
+   request there as a numbered plan (e.g. `plans/follow-up.md`), then prompt the LLM
+   with the file — e.g. “implement `plans/follow-up.md`”. Plans stay out of the bundle
+   and make multi-step work reviewable.
+6. **Ship:** after the project is built and verified, run `npm run bundle` and upload
+   `bundle/mbn-theme.zip` as the theme on the target site (Appearance → Themes →
+   Add New → Upload).
 
 ## Speed-up & token reduction
 
@@ -108,12 +136,30 @@ On anonymous front-end requests the page is buffered and rewritten to load late:
 customizer, AJAX/REST/feeds and **for logged-in users** (so the toolbar/editor are
 untouched) — verify it logged out. Toggle with the `mbn_enable_optimizations` filter.
 
-## Build & lint
+## Build, bundle & lint
 
 ```bash
 npm run build         # JS blocks (wp-scripts) + Tailwind CSS
+npm run bundle        # distributable theme zip → bundle/mbn-theme.zip
 composer run lint     # PHPCS — must pass before committing
 ```
 
-Build artifacts (`build/`, `assets/build/`) are generated; never commit them. Commit to
-a feature branch and open a PR — no direct pushes.
+`npm run bundle` (`scripts/bundle.mjs`) runs a fresh `npm run build`, stages every
+runtime file into `bundle/mbn-theme/` and zips it. The AI/dev harness never ships —
+`.claude`, `.cursor`, `AGENTS.md`, `.githooks`, `.vexp`, `src/`, `resources/`,
+`scripts/`, `plans/`, node/composer manifests and `vendor/` are excluded (a
+production-only `vendor/` is rebuilt inside the stage when the theme has runtime
+Composer deps), and the build aborts if a required runtime file is missing. Only
+regular files ship — sockets/FIFOs/symlinks (e.g. the vexp daemon socket) are skipped.
+
+Build artifacts (`build/`, `assets/build/`, `bundle/`) are generated; never commit
+them. Commit to a feature branch and open a PR — no direct pushes.
+
+## Versioning the `mbn-ai-` blocks
+
+On a **specific project install** (like this one) the generated `mbn-ai-*` blocks and
+components under `src/` are part of the project and **are committed** — the
+`.gitignore` no longer excludes them. Only the **reusable theme baseline** repo keeps
+them ignored (`src/mbn-ai-*/`, `src/components/mbn-ai-*/`), because there they are
+per-project output of `/build-design` / `/build-components` and get wiped by
+`scripts/reset.sh`.

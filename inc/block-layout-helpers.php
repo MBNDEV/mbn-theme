@@ -308,3 +308,17 @@ function mbn_attachment_id_by_slug( string $slug ): int {
   $cache[ $slug ] = ! empty( $posts ) ? (int) $posts[0] : 0;
   return $cache[ $slug ];
 }
+
+/**
+ * Sanitize a block "tag" attribute (from the shared TagControl) against the
+ * allowed semantic elements. Pairs with src/shared/tag-control.js.
+ *
+ * @param mixed  $tag      Raw attribute value.
+ * @param string $fallback Tag used when the value is empty or not allowed.
+ * @return string
+ */
+function mbn_tag( $tag, string $fallback = 'h2' ): string {
+  $allowed = array( 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'span' );
+  $tag     = strtolower( trim( (string) $tag ) );
+  return in_array( $tag, $allowed, true ) ? $tag : $fallback;
+}
